@@ -1,0 +1,22 @@
+services:
+  backend:
+    build: backend/
+    ports:
+      - "8000:8000"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  elasticsearch:
+    image: elasticsearch:8.14.0
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: false
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cat/health | grep -q 'green\\|yellow' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
