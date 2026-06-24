@@ -7,6 +7,7 @@ logging.basicConfig(
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.api.documents import router as document_router
+from app.api.documents import router as search_router
 from app.core.elastic import close_elasticsearch, init_elasticsearch
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -33,6 +34,7 @@ app.add_middleware(
 )
 
 app.include_router(document_router, prefix="/api/v1")
+app.include_router(search_router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
