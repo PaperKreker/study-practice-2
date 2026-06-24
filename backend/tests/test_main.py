@@ -1,0 +1,23 @@
+import asyncio
+
+from app import main
+
+
+def test_app_metadata() -> None:
+    assert main.app.title == "Интеллектуальная поисковая система по внутренней базе знаний университета"
+    assert main.app.docs_url == "/docs"
+    assert main.app.openapi_url == "/openapi.json"
+
+
+def test_document_router_is_registered() -> None:
+    paths = set(main.app.openapi()["paths"])
+
+    assert "/api/v1/documents/upload" in paths
+
+
+def test_root_response() -> None:
+    assert asyncio.run(main.root()) == {"message": "API поисковой системы успешно запущено"}
+
+
+def test_health_check_response() -> None:
+    assert asyncio.run(main.health_check()) == {"status": "ok"}
