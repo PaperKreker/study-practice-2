@@ -10,5 +10,5 @@ router = APIRouter(prefix="/documents", tags=["documents"])
     response_model=UploadResponse
 )
 async def upload(file: UploadFile = File(...)):
-    result = await validate_file(file)
+    result, file_bytes = await validate_file(file)
     return result
