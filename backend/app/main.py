@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.api.documents import router as document_router
 from app.core.elastic import close_elasticsearch, init_elasticsearch
+from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,6 +22,14 @@ app = FastAPI(
     docs_url="/docs",
     openapi_url="/openapi.json",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(document_router, prefix="/api/v1")
