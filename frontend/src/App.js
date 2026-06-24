@@ -1,23 +1,33 @@
-import logo from './logo.svg';
+import React, { useState } from 'react';
 import './App.css';
+import UploadPage from './pages/UploadPage';
 
+/**
+ * Корневой компонент приложения «Интеллектуальная поисковая система по базе
+ * знаний университета». Реализует навигацию между поиском и загрузкой.
+ */
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+    <div className="app">
+      <header className="app-header">
+        <div className="app-header__inner">
+          <div className="app-brand">
+            <span className="app-brand__logo" aria-hidden="true">
+              🎓
+            </span>
+            <div>
+              <div className="app-brand__title">База знаний</div>
+              <div className="app-brand__subtitle">
+                Интеллектуальный поиск по документам
+              </div>
+            </div>
+          </div>
+        </div>
       </header>
+
+      <main className="app-main">
+        <UploadPage />
+      </main>
     </div>
   );
 }

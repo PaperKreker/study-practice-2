@@ -1,70 +1,80 @@
-# Getting Started with Create React App
+# Frontend — Интеллектуальная поисковая система по базе знаний
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Клиентская часть веб-приложения для загрузки документов (PDF/DOCX) и
+полнотекстового поиска по ним. Реализована на **React** (Create React App,
+JavaScript).
 
-## Available Scripts
+## Возможности (соответствие ТЗ)
 
-In the project directory, you can run:
+| ID | Возможность |
+|------|-------------|
+| FE-01 | Drag-and-Drop зона загрузки с поддержкой множественного выбора файлов |
+| FE-02 | Прогресс-бар и статусы по каждому файлу: *Загрузка… → Индексация… → Готово / Ошибка* |
+| FE-03 | Список загруженных документов: название, дата загрузки, статус |
+| FE-04 | Поле поиска с кнопкой «Найти»; запуск по кнопке и по клавише Enter |
+| FE-05 | Результаты в виде карточек: имя файла, номер страницы, фрагмент, релевантность |
+| FE-06 | Подсветка совпадений жёлтым фоном |
+| FE-07 | Пагинация по 10 результатов на страницу |
+| FE-08 | Сообщение «По вашему запросу ничего не найдено…» при пустой выдаче |
+| FE-09 | Адаптивная вёрстка (корректно от 320px до 1920px) |
 
-### `npm start`
+## Структура
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```
+frontend/
+├── src/
+│   ├── components/        # Переиспользуемые UI-компоненты
+│   │   ├── DropZone.js        # Drag-and-Drop зона (FE-01)
+│   │   ├── UploadItem.js      # Строка очереди загрузки с прогрессом (FE-02)
+│   │   └── DocumentList.js    # Список загруженных документов (FE-03)
+│   ├── pages/
+│   │   └── UploadPage.js      # Экран загрузки
+│   ├── services/         # Взаимодействие с API
+│   │   └── api.js             # Запросы к бэкенду
+│   ├── utils/            # Вспомогательные функции
+│   ├── config.js         # Конфигурация (URL API, лимиты)
+│   ├── constants.js      # Константы статусов
+│   ├── App.js            # Корневой компонент + навигация
+│   └── index.js          # Точка входа
+├── public/
+├── .env.example
+└── package.json
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Запуск
 
-### `npm test`
+```bash
+npm install        # установка зависимостей
+npm start          # запуск dev-сервера на http://localhost:3000
+npm run build      # production-сборка в папку build/
+npm test           # запуск тестов
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Переменные окружения
 
-### `npm run build`
+Скопируйте `.env.example` в `.env` и при необходимости задайте адрес API:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```
+REACT_APP_API_URL=
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- **Dev:** оставьте пустым — запросы к `/api/...` проксируются на
+  `http://localhost:8000` (поле `proxy` в `package.json`).
+- **Production:** оставьте пустым, если Nginx проксирует `/api` на бэкенд,
+  либо укажите полный адрес бэкенда.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Ожидаемый контракт API
 
-### `npm run eject`
+Фронтенд рассчитывает на следующие эндпоинты (согласуются с бэкенд-командой):
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+| Метод | Путь | Назначение |
+|-------|------|-----------|
+| POST | `/api/v1/documents/upload` | Загрузка файла (multipart, поле `file`). Ответ: `{ id, file_name, status, uploaded_at }` |
+| GET | `/api/v1/documents` | Список документов: `[{ id, file_name, uploaded_at, status }]` |
+| GET | `/api/v1/documents/{id}` | Статус документа (для опроса индексации) |
+| GET | `/api/v1/search?q=&page=&size=` | Поиск. Ответ: `{ total, results: [{ chunk_id, file_name, page, text, score }] }` |
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Сервисный слой устойчив к вариациям ответа: список документов принимается как
+массив или как `{ documents: [...] }`; результаты поиска — как `{ results, total }`
+или как простой массив. Если эндпоинт статуса документа недоступен, файл
+считается успешно проиндексированным после завершения загрузки.
