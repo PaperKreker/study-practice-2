@@ -31,4 +31,4 @@ async def validate_file(file: UploadFile) -> dict:
         "file_name": filename,
         "size_bytes": file_size,
         "message": "Файл успешно загружен"
-    }
+    }, contents
