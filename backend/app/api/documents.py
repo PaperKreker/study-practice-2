@@ -1,6 +1,13 @@
-from fastapi import APIRouter, UploadFile, File, status
-from app.services.document_service import validate_file
+import os
+ 
+from fastapi import APIRouter, File, UploadFile, status, HTTPException, Query
+ 
 from app.schemas.document import UploadResponse
+from app.services.document_service import process_document, validate_file
+from app.services.indexing_service import index_document_chunks
+from app.schemas.search import SearchResultItem
+from app.services.search_service import search_documents
+
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -10,5 +17,47 @@ router = APIRouter(prefix="/documents", tags=["documents"])
     response_model=UploadResponse
 )
 async def upload(file: UploadFile = File(...)):
-    result, file_bytes = await validate_file(file)
-    return result
+    metadata, file_bytes = await validate_file(file)
+ 
+    _, ext = os.path.splitext((file.filename or "").lower())
+    chunks = await process_document(
+        document_id=metadata["document_id"],
+        file_name=metadata["file_name"],
+        file_bytes=file_bytes,
+        extension=ext,
+    )
+
+    try:
+        await index_document_chunks(
+            document_id=metadata["document_id"],
+            file_name=metadata["file_name"],
+            chunks=chunks
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Ошибка при сохранении документа в поисковый индекс."
+        )
+ 
+    return {
+        **metadata,
+        "message": f"Файл успешно загружен, разбит на {len(chunks)} чанков и проиндексирован",
+    }
+
+@router.get(
+    "/search",
+    status_code=status.HTTP_200_OK,
+    response_model=list[SearchResultItem]
+)
+async def search(
+    q: str = Query(..., min_length=1),
+    limit: int = Query(10, ge=1, le=50)
+):
+    try:
+        results = await search_documents(query=q, limit=limit)
+        return results
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Произошла ошибка при выполнении поиска."
+        )

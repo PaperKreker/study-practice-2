@@ -1,0 +1,2 @@
+backend/tests/fixtures/*.docx binary
+backend/tests/fixtures/*.pdf binary

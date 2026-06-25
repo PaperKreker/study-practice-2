@@ -1,9 +1,18 @@
+from functools import partial
+import logging
 import os
 import uuid
-from fastapi import UploadFile, HTTPException, status
+import anyio
+ 
+from fastapi import HTTPException, UploadFile, status
+ 
+from app.services.parsing_service import TextChunk, parse_document
+ 
+logger = logging.getLogger(__name__)
 
 MAX_FILE_SIZE = 20 * 1024 * 1024
 ALLOWED_EXTENSIONS = {".pdf", ".docx"}
+
 
 async def validate_file(file: UploadFile) -> dict:
     filename = file.filename
@@ -26,9 +35,40 @@ async def validate_file(file: UploadFile) -> dict:
     
     document_id = str(uuid.uuid4())
     
-    return {
+    metadata = {
         "document_id": document_id,
         "file_name": filename,
         "size_bytes": file_size,
-        "message": "Файл успешно загружен"
-    }, contents
+        "message": "Файл успешно загружен",
+    }
+ 
+    return metadata, contents
+
+async def process_document(
+    document_id: str,
+    file_name: str,
+    file_bytes: bytes,
+    extension: str,
+) -> list[TextChunk]:
+
+    logger.info(
+        "Начинаю обработку документа '%s' (id=%s, ext=%s, %d байт)",
+        file_name, document_id, extension, len(file_bytes),
+    )
+ 
+    try:
+        chunks = await anyio.to_thread.run_sync(
+            partial(parse_document, file_bytes, extension, document_id)
+        )   
+    except Exception as exc:
+        logger.exception("Ошибка при парсинге документа '%s': %s", file_name, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Не удалось обработать файл: {exc}",
+        )
+ 
+    logger.info(
+        "Документ '%s' успешно разбит на %d чанков.",
+        file_name, len(chunks),
+    )
+    return chunks
