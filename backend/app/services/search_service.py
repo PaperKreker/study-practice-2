@@ -4,7 +4,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-async def search_documents(query: str, limit: int = 10, document_id: str | None = None) -> list[dict]:
+async def search_documents(query: str, limit: int = 10, offset: int = 0, document_id: str | None = None) -> list[dict]:
     es = get_es_client()
     index_name = settings.elasticsearch_index
 
@@ -26,6 +26,7 @@ async def search_documents(query: str, limit: int = 10, document_id: str | None 
     body = {
             "query": {"bool": bool_query},
             "size": limit,
+            "from": offset,
             "highlight": {
                 "fields": {
                     "text": {"pre_tags": ["<mark>"], "post_tags": ["</mark>"]}

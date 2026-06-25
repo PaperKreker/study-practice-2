@@ -52,10 +52,11 @@ async def upload(file: UploadFile = File(...)):
 async def search(
     q: str = Query(..., min_length=1),
     limit: int = Query(10, ge=1, le=50),
+    offset: int = Query(0, ge=0),
     document_id: str | None = Query(None)
 ):
     try:
-        results = await search_documents(query=q, limit=limit, document_id=document_id)
+        results = await search_documents(query=q, limit=limit, offset=offset, document_id=document_id)
         return results
     except Exception:
         raise HTTPException(
