@@ -15,7 +15,7 @@ const TABS = {
  * знаний университета». Реализует навигацию между поиском и загрузкой.
  */
 function App() {
-  const [activeTab, setActiveTab] = useState(TABS.SEARCH);
+  const [activeTab, setActiveTab] = useState(TABS.UPLOAD);
 
   return (
     <div className="app">
@@ -35,6 +35,15 @@ function App() {
 
           <nav className="app-nav" aria-label="Основная навигация">
             <button
+                type="button"
+                className={`app-nav__tab${
+                    activeTab === TABS.UPLOAD ? ' app-nav__tab--active' : ''
+                }`}
+                onClick={() => setActiveTab(TABS.UPLOAD)}
+            >
+              Загрузка
+            </button>
+            <button
               type="button"
               className={`app-nav__tab${
                 activeTab === TABS.SEARCH ? ' app-nav__tab--active' : ''
@@ -43,15 +52,6 @@ function App() {
             >
               Поиск
             </button>
-            <button
-              type="button"
-              className={`app-nav__tab${
-                activeTab === TABS.UPLOAD ? ' app-nav__tab--active' : ''
-              }`}
-              onClick={() => setActiveTab(TABS.UPLOAD)}
-            >
-              Загрузка
-            </button>
           </nav>
         </div>
       </header>
@@ -59,10 +59,6 @@ function App() {
       <main className="app-main">
         {activeTab === TABS.SEARCH ? <SearchPage /> : <UploadPage />}
       </main>
-
-      <footer className="app-footer">
-        Учебная практика · 09.03.04 Программная инженерия
-      </footer>
     </div>
   );
 }

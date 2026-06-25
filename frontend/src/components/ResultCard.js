@@ -24,7 +24,6 @@ function ResultCard({ result, query }) {
       <header className="result-card__header">
         <span className="result-card__file" title={fileName}>
           <span className="result-card__icon" aria-hidden="true">
-            📄
           </span>
           {fileName || 'Без названия'}
         </span>

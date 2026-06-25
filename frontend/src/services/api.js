@@ -129,7 +129,7 @@ export async function searchDocuments(query, page = 1, size = PAGE_SIZE) {
     page: String(page),
     size: String(size),
   });
-  const response = await fetch(buildUrl(`/api/v1/search?${params.toString()}`));
+  const response = await fetch(buildUrl(`/api/v1/documents/search?${params.toString()}`));
   if (!response.ok) {
     throw new Error(await extractErrorMessage(response));
   }
