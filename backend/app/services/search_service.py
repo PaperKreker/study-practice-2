@@ -4,22 +4,32 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-async def search_documents(query: str, limit: int = 10) -> list[dict]:
+async def search_documents(query: str, limit: int = 10, offset: int = 0, document_id: str | None = None) -> list[dict]:
     es = get_es_client()
     index_name = settings.elasticsearch_index
 
-    body = {
-        "query": {
-            "multi_match": {
-                "query": query,
-                "fields": ["text", "file_name^2"],
-                "fuzziness": "AUTO"
+    bool_query = {
+        "must": [
+            {
+                "multi_match": {
+                    "query": query,
+                    "fields": ["text", "file_name^2"],
+                    "fuzziness": "AUTO"
+                }
             }
-        },
-        "size": limit,
-        "highlight": {
-            "fields": {
-                "text": {"pre_tags": ["<mark>"], "post_tags": ["</mark>"]}
+        ]
+    }
+
+    if document_id:
+        bool_query["filter"] = [{"term": {"document_id": document_id}}]
+
+    body = {
+            "query": {"bool": bool_query},
+            "size": limit,
+            "from": offset,
+            "highlight": {
+                "fields": {
+                    "text": {"pre_tags": ["<mark>"], "post_tags": ["</mark>"]}
             }
         }
     }
