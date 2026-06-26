@@ -4,9 +4,11 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-async def search_documents(query: str, limit: int = 10, offset: int = 0, document_id: str | None = None) -> list[dict]:
+async def search_documents(query: str, page: int = 1, size: int = 10, document_id: str | None = None) -> list[dict]:
     es = get_es_client()
     index_name = settings.elasticsearch_index
+
+    from_offset = (page - 1) * size
 
     bool_query = {
         "must": [
@@ -25,13 +27,13 @@ async def search_documents(query: str, limit: int = 10, offset: int = 0, documen
 
     body = {
             "query": {"bool": bool_query},
-            "size": limit,
-            "from": offset,
+            "size": size,
+            "from": from_offset,
             "highlight": {
                 "fields": {
                     "text": {"pre_tags": ["<mark>"], "post_tags": ["</mark>"]}
+                }
             }
-        }
     }
 
     try:
@@ -48,7 +50,7 @@ async def search_documents(query: str, limit: int = 10, offset: int = 0, documen
                 "chunk_id": source.get("chunk_id"),
                 "document_id": source.get("document_id"),
                 "file_name": source.get("file_name"),
-                "page_number": source.get("page_number"),
+                "page": source.get("page_number"),
                 "text": source.get("text"),
                 "score": hit.get("_score"),
                 "highlights": highlight
