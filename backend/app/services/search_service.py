@@ -2,9 +2,13 @@ import logging
 from app.core.elastic import get_es_client
 from app.core.config import settings
 
+import uuid
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.search_history import SearchHistory
+
 logger = logging.getLogger(__name__)
 
-async def search_documents(query: str, page: int = 1, size: int = 10, document_id: str | None = None) -> list[dict]:
+async def search_documents(db: AsyncSession, query: str, page: int = 1, size: int = 10, document_id: str | None = None) -> list[dict]:
     es = get_es_client()
     index_name = settings.elasticsearch_index
 
@@ -56,6 +60,15 @@ async def search_documents(query: str, page: int = 1, size: int = 10, document_i
                     "score": hit.get("_score"),
                     "highlights": highlight
                 })
+
+            history_entry = SearchHistory(
+                query=query,
+                results_count=total_hits,
+                user_id=None,
+                document_id=uuid.UUID(document_id) if document_id else None,
+            )
+            db.add(history_entry)
+            await db.commit()
                 
             return {"total": total_hits, "items": results}
     except Exception as exc:

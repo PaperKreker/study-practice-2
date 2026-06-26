@@ -12,12 +12,16 @@ from app.api.documents import router as document_router
 from app.api.search import router as search_router
 from app.core.elastic import close_elasticsearch, init_elasticsearch
 from fastapi.middleware.cors import CORSMiddleware
+from app.core.database import close_db, init_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_elasticsearch()
+    await init_db()
     yield
     await close_elasticsearch()
+    await close_db()
+
 
 app = FastAPI(
     title="Интеллектуальная поисковая система по внутренней базе знаний университета",

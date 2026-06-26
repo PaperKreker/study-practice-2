@@ -7,6 +7,9 @@ import anyio
 from fastapi import HTTPException, UploadFile, status
  
 from app.services.parsing_service import TextChunk, parse_document
+
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.document import Document
  
 logger = logging.getLogger(__name__)
 
@@ -72,3 +75,15 @@ async def process_document(
         file_name, len(chunks),
     )
     return chunks
+
+async def create_document_metadata(db: AsyncSession, metadata: dict, chunk_count: int) -> Document:
+    db_document = Document(
+        id=uuid.UUID(metadata["document_id"]),
+        file_name=metadata["file_name"],
+        size_bytes=metadata["size_bytes"],
+        chunk_count=chunk_count,
+        user_id=None,
+    )
+    db.add(db_document)
+    await db.commit()
+    return db_document
