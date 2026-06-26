@@ -8,6 +8,7 @@ from fastapi import HTTPException, UploadFile, status
 
 from app.services.parsing_service import TextChunk, parse_document
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.document import Document
 
@@ -22,13 +23,19 @@ async def validate_file(file: UploadFile) -> dict:
     _, ext = os.path.splitext(filename.lower())
 
     if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Допустимы только PDF и DOCX")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Допустимы только PDF и DOCX",
+        )
 
     contents = await file.read()
     file_size = len(contents)
 
     if file_size > MAX_FILE_SIZE:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Размер файла превышает 20 МБ")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Размер файла превышает 20 МБ",
+        )
 
     document_id = str(uuid.uuid4())
 
@@ -58,7 +65,9 @@ async def process_document(
     )
 
     try:
-        chunks = await anyio.to_thread.run_sync(partial(parse_document, file_bytes, extension, document_id))
+        chunks = await anyio.to_thread.run_sync(
+            partial(parse_document, file_bytes, extension, document_id)
+        )
     except Exception as exc:
         logger.exception("Ошибка при парсинге документа '%s': %s", file_name, exc)
         raise HTTPException(
@@ -74,7 +83,9 @@ async def process_document(
     return chunks
 
 
-async def create_document_metadata(db: AsyncSession, metadata: dict, chunk_count: int) -> Document:
+async def create_document_metadata(
+    db: AsyncSession, metadata: dict, chunk_count: int
+) -> Document:
     db_document = Document(
         id=uuid.UUID(metadata["document_id"]),
         file_name=metadata["file_name"],
@@ -85,3 +96,41 @@ async def create_document_metadata(db: AsyncSession, metadata: dict, chunk_count
     db.add(db_document)
     await db.commit()
     return db_document
+
+
+async def get_all_documents(
+    db: AsyncSession,
+    limit: int = 50,
+    offset: int = 0,
+) -> tuple[list[Document], int]:
+    count_result = await db.execute(select(func.count()).select_from(Document))
+    total = count_result.scalar_one()
+
+    result = await db.execute(
+        select(Document)
+        .order_by(Document.uploaded_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    items = list(result.scalars().all())
+
+    return items, total
+
+
+async def get_document_by_id(db: AsyncSession, document_id: str) -> Document | None:
+    try:
+        uid = uuid.UUID(document_id)
+    except ValueError:
+        return None
+
+    result = await db.execute(select(Document).where(Document.id == uid))
+    return result.scalar_one_or_none()
+
+
+async def delete_document_from_db(db: AsyncSession, document_id: str) -> bool:
+    doc = await get_document_by_id(db, document_id)
+    if not doc:
+        return False
+    await db.delete(doc)
+    await db.commit()
+    return True

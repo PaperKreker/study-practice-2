@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     postgres_host: str = "db"
     postgres_port: int = 5432
 
+    secret_key: str = "change-me-in-production-please"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24  # 24 часа
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

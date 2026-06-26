@@ -4,7 +4,8 @@ from app import main
 
 
 def test_app_metadata() -> None:
-    assert main.app.title == "Интеллектуальная поисковая система по внутренней базе знаний университета"
+    expected_title = "Интеллектуальная поисковая система по внутренней базе знаний университета"
+    assert main.app.title == expected_title
     assert main.app.docs_url == "/docs"
     assert main.app.openapi_url == "/openapi.json"
 
@@ -16,7 +17,9 @@ def test_document_router_is_registered() -> None:
 
 
 def test_root_response() -> None:
-    assert asyncio.run(main.root()) == {"message": "API поисковой системы успешно запущено"}
+    assert asyncio.run(main.root()) == {
+        "message": "API поисковой системы успешно запущено"
+    }
 
 
 def test_health_check_response() -> None:
