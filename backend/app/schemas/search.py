@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class SearchResultItem(BaseModel):
     chunk_id: str
     document_id: str
@@ -8,6 +9,7 @@ class SearchResultItem(BaseModel):
     text: str
     score: float
     highlights: list[str] = []
+
 
 class SearchResponse(BaseModel):
     total: int

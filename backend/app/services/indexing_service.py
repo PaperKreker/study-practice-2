@@ -6,11 +6,8 @@ from app.services.parsing_service import TextChunk
 
 logger = logging.getLogger(__name__)
 
-async def index_document_chunks(
-    document_id: str,
-    file_name: str,
-    chunks: list[TextChunk]
-) -> int:
+
+async def index_document_chunks(document_id: str, file_name: str, chunks: list[TextChunk]) -> int:
     es = get_es_client()
     index_name = settings.elasticsearch_index
 
@@ -25,7 +22,7 @@ async def index_document_chunks(
                     "file_name": file_name,
                     "page_number": chunk.page_number,
                     "text": chunk.text,
-                }
+                },
             }
 
     try:

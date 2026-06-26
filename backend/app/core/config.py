@@ -1,6 +1,7 @@
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     elasticsearch_url: str = "http://elasticsearch:9200"
     elasticsearch_index: str = "documents"
@@ -12,7 +13,6 @@ class Settings(BaseSettings):
     postgres_db: str = "api_db"
     postgres_host: str = "db"
     postgres_port: int = 5432
-
 
     model_config = SettingsConfigDict(
         env_file=".env",

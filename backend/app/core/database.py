@@ -29,8 +29,6 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    import app.models
-
     from app.models.base import Base
 
     logger.info("Инициализация схемы БД...")

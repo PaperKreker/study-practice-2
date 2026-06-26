@@ -1,7 +1,7 @@
 import os
- 
-from fastapi import APIRouter, Depends, File, UploadFile, status, HTTPException, Query
- 
+
+from fastapi import APIRouter, Depends, File, UploadFile, status, HTTPException
+
 from app.schemas.document import UploadResponse
 from app.services.document_service import process_document, validate_file
 from app.services.indexing_service import index_document_chunks
@@ -12,14 +12,15 @@ from app.core.database import get_db
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
+
 @router.post(
-    "/upload", 
+    "/upload",
     status_code=status.HTTP_201_CREATED,
     response_model=UploadResponse
 )
 async def upload(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
     metadata, file_bytes = await validate_file(file)
- 
+
     _, ext = os.path.splitext((file.filename or "").lower())
     chunks = await process_document(
         document_id=metadata["document_id"],
@@ -39,9 +40,9 @@ async def upload(file: UploadFile = File(...), db: AsyncSession = Depends(get_db
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Ошибка при сохранении документа в поисковый индекс."
         )
-    
+
     await create_document_metadata(db=db, metadata=metadata, chunk_count=len(chunks))
- 
+
     return {
         **metadata,
         "message": f"Файл успешно загружен, разбит на {len(chunks)} чанков и проиндексирован",

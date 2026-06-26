@@ -8,21 +8,23 @@ es_client: AsyncElasticsearch | None = None
 
 INDEX_MAPPINGS = {
     "properties": {
-        "chunk_id":    {"type": "keyword"},
+        "chunk_id": {"type": "keyword"},
         "document_id": {"type": "keyword"},
-        "file_name":   {"type": "keyword"},
+        "file_name": {"type": "keyword"},
         "page_number": {"type": "integer"},
         "text": {
-            "type":     "text",
+            "type": "text",
             "analyzer": "russian",
         },
     }
 }
 
+
 def get_es_client() -> AsyncElasticsearch:
     if es_client is None:
         raise RuntimeError("Elasticsearch client не инициализирован")
     return es_client
+
 
 async def init_elasticsearch() -> None:
     global es_client
@@ -38,6 +40,7 @@ async def init_elasticsearch() -> None:
     except NotFoundError:
         logger.info("Индекс '%s' не найден. Создаю...", index_name)
         await es_client.indices.create(index=index_name, mappings=INDEX_MAPPINGS)
+
 
 async def close_elasticsearch() -> None:
     global es_client
