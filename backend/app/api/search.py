@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status, HTTPException, Query
  
-from app.schemas.search import SearchResultItem
+from app.schemas.search import SearchResponse
 from app.services.search_service import search_documents
 
 router = APIRouter(tags=["search"])
@@ -8,7 +8,7 @@ router = APIRouter(tags=["search"])
 @router.get(
     "/search",
     status_code=status.HTTP_200_OK,
-    response_model=list[SearchResultItem]
+    response_model=SearchResponse
 )
 async def search(
     q: str = Query(..., min_length=1),

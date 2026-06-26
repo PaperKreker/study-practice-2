@@ -8,3 +8,7 @@ class SearchResultItem(BaseModel):
     text: str
     score: float
     highlights: list[str] = []
+
+class SearchResponse(BaseModel):
+    total: int
+    items: list[SearchResultItem]

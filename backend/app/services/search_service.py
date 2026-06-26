@@ -37,26 +37,27 @@ async def search_documents(query: str, page: int = 1, size: int = 10, document_i
     }
 
     try:
-        response = await es.search(index=index_name, body=body)
-        hits = response.get("hits", {}).get("hits", [])
-        
-        results = []
-        for hit in hits:
-            source = hit["_source"]
-
-            highlight = hit.get("highlight", {}).get("text", [])
+            response = await es.search(index=index_name, body=body)
+            hits = response.get("hits", {}).get("hits", [])
             
-            results.append({
-                "chunk_id": source.get("chunk_id"),
-                "document_id": source.get("document_id"),
-                "file_name": source.get("file_name"),
-                "page": source.get("page_number"),
-                "text": source.get("text"),
-                "score": hit.get("_score"),
-                "highlights": highlight
-            })
+            total_hits = response.get("hits", {}).get("total", {}).get("value", 0)
             
-        return results
+            results = []
+            for hit in hits:
+                source = hit["_source"]
+                highlight = hit.get("highlight", {}).get("text", [])
+                
+                results.append({
+                    "chunk_id": source.get("chunk_id"),
+                    "document_id": source.get("document_id"),
+                    "file_name": source.get("file_name"),
+                    "page": source.get("page_number"),
+                    "text": source.get("text"),
+                    "score": hit.get("_score"),
+                    "highlights": highlight
+                })
+                
+            return {"total": total_hits, "items": results}
     except Exception as exc:
         logger.exception("Ошибка при поиске по запросу '%s': %s", query, exc)
         raise
