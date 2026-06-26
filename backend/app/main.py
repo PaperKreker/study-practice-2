@@ -9,7 +9,7 @@ logging.getLogger("pdfplumber").setLevel(logging.WARNING)
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.api.documents import router as document_router
-from app.api.documents import router as search_router
+from app.api.search import router as search_router
 from app.core.elastic import close_elasticsearch, init_elasticsearch
 from fastapi.middleware.cors import CORSMiddleware
 

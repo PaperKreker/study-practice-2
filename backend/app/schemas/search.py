@@ -4,8 +4,7 @@ class SearchResultItem(BaseModel):
     chunk_id: str
     document_id: str
     file_name: str
-    page_number: int | None = None
+    page: int | None = None
     text: str
     score: float
     highlights: list[str] = []
-    
