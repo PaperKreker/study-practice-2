@@ -1,13 +1,17 @@
 import logging
+import redis.asyncio as aioredis
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.api.documents import router as document_router
 from app.api.history import router as history_router
 from app.api.search import router as search_router
 from app.api.users import router as users_router
+from app.core.config import settings
 
 from app.core.elastic import close_elasticsearch, init_elasticsearch
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
 from app.core.database import close_db, init_db
 
 logging.basicConfig(
@@ -22,6 +26,8 @@ logging.getLogger("pdfplumber").setLevel(logging.WARNING)
 async def lifespan(app: FastAPI):
     await init_elasticsearch()
     await init_db()
+    redis = aioredis.from_url(settings.redis_url, decode_responses=True)
+    FastAPICache.init(RedisBackend(redis), prefix="kb-cache")
     yield
     await close_elasticsearch()
     await close_db()
