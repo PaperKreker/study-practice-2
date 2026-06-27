@@ -6,10 +6,9 @@ from app.services.parsing_service import TextChunk
 
 logger = logging.getLogger(__name__)
 
+
 async def index_document_chunks(
-    document_id: str,
-    file_name: str,
-    chunks: list[TextChunk]
+    document_id: str, file_name: str, chunks: list[TextChunk]
 ) -> int:
     es = get_es_client()
     index_name = settings.elasticsearch_index
@@ -25,13 +24,32 @@ async def index_document_chunks(
                     "file_name": file_name,
                     "page_number": chunk.page_number,
                     "text": chunk.text,
-                }
+                },
             }
 
     try:
         success, _ = await helpers.async_bulk(es, generate_actions())
-        logger.info("Успешно проиндексировано %d чанков для документа '%s'", success, file_name)
+        logger.info(
+            "Успешно проиндексировано %d чанков для документа '%s'", success, file_name
+        )
         return success
     except Exception as exc:
         logger.exception("Ошибка при индексации документа '%s': %s", file_name, exc)
         raise
+
+
+async def delete_document_chunks(document_id: str) -> int:
+    es = get_es_client()
+    index_name = settings.elasticsearch_index
+
+    response = await es.delete_by_query(
+        index=index_name,
+        body={"query": {"term": {"document_id": document_id}}},
+        refresh=True,
+    )
+
+    deleted = response.get("deleted", 0)
+    logger.info(
+        "Удалено %d чанков из Elasticsearch для документа %s", deleted, document_id
+    )
+    return deleted
