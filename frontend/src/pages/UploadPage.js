@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import DropZone from '../components/DropZone';
 import UploadItem from '../components/UploadItem';
+import DocumentList from '../components/DocumentList';
 import { UPLOAD_STATUS, normalizeStatus } from '../constants';
 import { validateFile } from '../utils/validateFile';
 import {
@@ -195,6 +196,13 @@ function UploadPage() {
           ))}
         </section>
       )}
+
+      <DocumentList
+          documents={documents}
+          loading={docsLoading}
+          error={docsError}
+          onRefresh={loadDocuments}
+      />
     </div>
   );
 }

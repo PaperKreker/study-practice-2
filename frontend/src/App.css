@@ -409,6 +409,11 @@
   font-size: 14px;
 }
 
+.doc-list__size {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
 /* ===== Поиск ===== */
 .search-bar {
   position: relative;

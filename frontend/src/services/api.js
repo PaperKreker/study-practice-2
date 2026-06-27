@@ -98,7 +98,7 @@ export async function fetchDocuments() {
   }
   const data = await response.json();
   // Поддерживаем как { documents: [...] }, так и просто [...]
-  return Array.isArray(data) ? data : data.documents || [];
+  return Array.isArray(data) ? data : data.items || [];
 }
 
 /**
@@ -129,7 +129,7 @@ export async function searchDocuments(query, page = 1, size = PAGE_SIZE) {
     page: String(page),
     size: String(size),
   });
-  const response = await fetch(buildUrl(`/api/v1/documents/search?${params.toString()}`));
+  const response = await fetch(buildUrl(`/api/v1/search?${params.toString()}`));
   if (!response.ok) {
     throw new Error(await extractErrorMessage(response));
   }
@@ -139,7 +139,7 @@ export async function searchDocuments(query, page = 1, size = PAGE_SIZE) {
   if (Array.isArray(data)) {
     return { results: data, total: data.length };
   }
-  const results = data.results || data.hits || [];
+  const results = data.items || data.results || data.hits || [];
   const total = typeof data.total === 'number' ? data.total : results.length;
   return { results, total };
 }
