@@ -26,7 +26,9 @@ class FakeUploadFile:
         ("лекция.pdf", b"%PDF-1.7\ncontent"),
     ],
 )
-def test_validate_file_accepts_allowed_extensions(filename: str, contents: bytes) -> None:
+def test_validate_file_accepts_allowed_extensions(
+    filename: str, contents: bytes
+) -> None:
     result, file_bytes = asyncio.run(validate_file(FakeUploadFile(filename, contents)))
 
     UUID(result["document_id"])
@@ -36,7 +38,9 @@ def test_validate_file_accepts_allowed_extensions(filename: str, contents: bytes
     assert file_bytes == contents
 
 
-@pytest.mark.parametrize("filename", ["notes.txt", "image.png", "archive.zip", "no_extension"])
+@pytest.mark.parametrize(
+    "filename", ["notes.txt", "image.png", "archive.zip", "no_extension"]
+)
 def test_validate_file_rejects_disallowed_extensions(filename: str) -> None:
     with pytest.raises(HTTPException) as exc_info:
         asyncio.run(validate_file(FakeUploadFile(filename, b"content")))
@@ -48,7 +52,9 @@ def test_validate_file_rejects_disallowed_extensions(filename: str) -> None:
 def test_validate_file_accepts_file_at_size_limit() -> None:
     contents = b"x" * MAX_FILE_SIZE
 
-    result, file_bytes = asyncio.run(validate_file(FakeUploadFile("limit.pdf", contents)))
+    result, file_bytes = asyncio.run(
+        validate_file(FakeUploadFile("limit.pdf", contents))
+    )
 
     assert result["size_bytes"] == MAX_FILE_SIZE
     assert file_bytes == contents

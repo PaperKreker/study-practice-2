@@ -30,4 +30,3 @@ def test_upload_response_coerces_uuid_string() -> None:
     )
 
     assert response.document_id == document_id
-

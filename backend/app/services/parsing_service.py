@@ -15,7 +15,7 @@ CHUNK_OVERLAP = 100
 
 @dataclass
 class TextChunk:
-    chunk_id: str   # формат: "{document_id}_{порядковый_номер}"
+    chunk_id: str  # формат: "{document_id}_{порядковый_номер}"
     page_number: int
     text: str
 
@@ -62,7 +62,9 @@ def parse_pdf(file_bytes: bytes, document_id: str) -> list[TextChunk]:
                 logger.debug("Страница %d пустая, пропускаем.", page_number)
                 continue
 
-            page_chunks = _split_into_chunks(text, page_number, chunk_id_offset, document_id)
+            page_chunks = _split_into_chunks(
+                text, page_number, chunk_id_offset, document_id
+            )
             chunks.extend(page_chunks)
             chunk_id_offset += len(page_chunks)
 
@@ -107,14 +109,22 @@ def parse_docx(file_bytes: bytes, document_id: str) -> list[TextChunk]:
                 body_elements.append(table_text)
 
     full_text = "\n\n".join(body_elements)
-    chunks = _split_into_chunks(full_text, page_number=1, chunk_id_offset=0, document_id=document_id)
+    chunks = _split_into_chunks(
+        full_text, page_number=1, chunk_id_offset=0, document_id=document_id
+    )
 
-    logger.info("DOCX: извлечено %d чанков (параграфов: %d, таблиц: %d).",
-                len(chunks), para_index, table_index)
+    logger.info(
+        "DOCX: извлечено %d чанков (параграфов: %d, таблиц: %d).",
+        len(chunks),
+        para_index,
+        table_index,
+    )
     return chunks
 
 
-def parse_document(file_bytes: bytes, extension: str, document_id: str) -> list[TextChunk]:
+def parse_document(
+    file_bytes: bytes, extension: str, document_id: str
+) -> list[TextChunk]:
     if extension == ".pdf":
         return parse_pdf(file_bytes, document_id)
     elif extension == ".docx":
