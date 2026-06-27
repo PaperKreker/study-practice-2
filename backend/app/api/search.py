@@ -4,6 +4,7 @@ from app.schemas.search import SearchResponse
 from app.services.search_service import search_documents
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
+from fastapi_cache.decorator import cache
 
 router = APIRouter(tags=["search"])
 
@@ -14,6 +15,7 @@ router = APIRouter(tags=["search"])
     response_model=SearchResponse,
     summary="Поиск по документам",
 )
+@cache(expire=300)
 async def search(
     q: str = Query(..., min_length=1),
     page: int = Query(1, ge=1),

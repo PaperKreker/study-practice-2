@@ -4,7 +4,9 @@ from app import main
 
 
 def test_app_metadata() -> None:
-    expected_title = "Интеллектуальная поисковая система по внутренней базе знаний университета"
+    expected_title = (
+        "Интеллектуальная поисковая система по внутренней базе знаний университета"
+    )
     assert main.app.title == expected_title
     assert main.app.docs_url == "/docs"
     assert main.app.openapi_url == "/openapi.json"
