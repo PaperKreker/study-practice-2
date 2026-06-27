@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    elasticsearch_url: str = "http://127.0.0.1:9200/"
+    elasticsearch_url: str = "http://elasticsearch:9200"
     elasticsearch_index: str = "documents"
 
     redis_url: str = "redis://redis:6379"

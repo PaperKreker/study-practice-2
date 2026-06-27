@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 async def search_documents(
     db: AsyncSession,
     query: str,
+    user_id: uuid.UUID,
     page: int = 1,
     size: int = 10,
     document_id: str | None = None,
@@ -71,7 +72,7 @@ async def search_documents(
         history_entry = SearchHistory(
             query=query,
             results_count=total_hits,
-            user_id=None,
+            user_id=user_id,
             document_id=uuid.UUID(document_id) if document_id else None,
         )
         db.add(history_entry)

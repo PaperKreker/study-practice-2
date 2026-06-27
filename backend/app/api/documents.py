@@ -14,6 +14,8 @@ from app.services.document_service import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
+from app.api.users import get_current_user
+from app.models.user import User
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -24,7 +26,7 @@ router = APIRouter(prefix="/documents", tags=["documents"])
     response_model=UploadResponse,
     summary="Загрузка документа (PDF или DOCX) и его разбиение на чанки",
 )
-async def upload(file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+async def upload(file: UploadFile = File(...), db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     metadata, file_bytes = await validate_file(file)
 
     _, ext = os.path.splitext((file.filename or "").lower())
@@ -47,7 +49,7 @@ async def upload(file: UploadFile = File(...), db: AsyncSession = Depends(get_db
             detail="Ошибка при сохранении документа в поисковый индекс.",
         )
 
-    await create_document_metadata(db=db, metadata=metadata, chunk_count=len(chunks))
+    await create_document_metadata(db=db, metadata=metadata, chunk_count=len(chunks), user_id=current_user.id)
 
     return {
         **metadata,
