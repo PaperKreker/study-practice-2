@@ -1,5 +1,4 @@
 import React from 'react';
-import { STATUS_LABELS, normalizeStatus } from '../constants';
 import {formatDate, formatFileSize} from '../utils/format';
 
 /**
