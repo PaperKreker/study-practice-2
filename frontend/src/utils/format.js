@@ -9,7 +9,7 @@
  */
 export function formatFileSize(bytes) {
   if (!bytes && bytes !== 0) return '';
-  const units = ['Б', 'КБ', 'МБ', 'ГБ'];
+  const units = ['Б', 'КБ', 'МБ', 'ГБ', 'ТБ', 'ПБ'];
   let value = bytes;
   let unitIndex = 0;
   while (value >= 1024 && unitIndex < units.length - 1) {

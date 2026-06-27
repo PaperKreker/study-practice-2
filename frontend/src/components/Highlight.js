@@ -27,7 +27,7 @@ function Highlight({ text, query }) {
   const terms = query
     .trim()
     .split(/\s+/)
-    .filter((term) => term.length >= 2)
+    .filter((term) => term.length >= 1)
     .map(escapeRegExp);
 
   if (terms.length === 0) {

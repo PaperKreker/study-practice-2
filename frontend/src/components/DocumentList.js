@@ -1,6 +1,6 @@
 import React from 'react';
 import { STATUS_LABELS, normalizeStatus } from '../constants';
-import { formatDate } from '../utils/format';
+import {formatDate, formatFileSize} from '../utils/format';
 
 /**
  * Список уже загруженных документов с названием, датой загрузки и статусом
@@ -35,26 +35,22 @@ function DocumentList({ documents, loading, error, onRefresh }) {
           <div className="doc-list__row doc-list__row--head" role="row">
             <span role="columnheader">Название</span>
             <span role="columnheader">Дата загрузки</span>
-            <span role="columnheader">Статус</span>
+            <span role="columnheader">Размер</span>
           </div>
           {documents.map((doc) => {
-            const status = normalizeStatus(doc.status);
             const id = doc.id || doc.document_id || doc.file_name;
             return (
               <div className="doc-list__row" role="row" key={id}>
                 <span className="doc-list__name" role="cell" title={doc.file_name}>
                   <span className="doc-list__file-icon" aria-hidden="true">
-                    📄
                   </span>
                   {doc.file_name}
                 </span>
                 <span className="doc-list__date" role="cell">
                   {formatDate(doc.uploaded_at || doc.created_at)}
                 </span>
-                <span role="cell">
-                  <span className={`status-badge status-badge--${status}`}>
-                    {STATUS_LABELS[status]}
-                  </span>
+                <span className="doc-list__size" role="cell">
+                    {formatFileSize(doc.size_bytes)}
                 </span>
               </div>
             );

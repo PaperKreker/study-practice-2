@@ -198,10 +198,10 @@ function UploadPage() {
       )}
 
       <DocumentList
-        documents={documents}
-        loading={docsLoading}
-        error={docsError}
-        onRefresh={loadDocuments}
+          documents={documents}
+          loading={docsLoading}
+          error={docsError}
+          onRefresh={loadDocuments}
       />
     </div>
   );

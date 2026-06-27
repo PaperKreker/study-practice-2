@@ -10,7 +10,7 @@ export const UPLOAD_STATUS = {
   ERROR: 'error',
 };
 
-/** Человекочитаемые подписи состояний. */
+/** Подписи состояний. */
 export const STATUS_LABELS = {
   [UPLOAD_STATUS.UPLOADING]: 'Загрузка...',
   [UPLOAD_STATUS.INDEXING]: 'Индексация...',
