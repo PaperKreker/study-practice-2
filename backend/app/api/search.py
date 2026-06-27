@@ -8,7 +8,12 @@ from app.core.database import get_db
 router = APIRouter(tags=["search"])
 
 
-@router.get("/search", status_code=status.HTTP_200_OK, response_model=SearchResponse)
+@router.get(
+    "/search",
+    status_code=status.HTTP_200_OK,
+    response_model=SearchResponse,
+    summary="Поиск по документам",
+)
 async def search(
     q: str = Query(..., min_length=1),
     page: int = Query(1, ge=1),
@@ -17,7 +22,9 @@ async def search(
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        response_data = await search_documents(db=db, query=q, page=page, size=size, document_id=document_id)
+        response_data = await search_documents(
+            db=db, query=q, page=page, size=size, document_id=document_id
+        )
         return response_data
     except Exception:
         raise HTTPException(

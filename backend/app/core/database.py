@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 engine = create_async_engine(
     settings.database_url,
-    echo=False,          # True для отладки SQL-запросов
+    echo=False,  # True для отладки SQL-запросов
     pool_pre_ping=True,  # проверять соединение перед каждым использованием
 )
 

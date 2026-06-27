@@ -29,7 +29,9 @@ def get_es_client() -> AsyncElasticsearch:
 async def init_elasticsearch() -> None:
     global es_client
 
-    logger.debug("Подключение к Elasticsearch по адресу: %s", settings.elasticsearch_url)
+    logger.debug(
+        "Подключение к Elasticsearch по адресу: %s", settings.elasticsearch_url
+    )
 
     es_client = AsyncElasticsearch(settings.elasticsearch_url)
     index_name = settings.elasticsearch_index

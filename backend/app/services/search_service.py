@@ -10,14 +10,28 @@ logger = logging.getLogger(__name__)
 
 
 async def search_documents(
-    db: AsyncSession, query: str, page: int = 1, size: int = 10, document_id: str | None = None
+    db: AsyncSession,
+    query: str,
+    page: int = 1,
+    size: int = 10,
+    document_id: str | None = None,
 ) -> list[dict]:
     es = get_es_client()
     index_name = settings.elasticsearch_index
 
     from_offset = (page - 1) * size
 
-    bool_query = {"must": [{"multi_match": {"query": query, "fields": ["text", "file_name^2"], "fuzziness": "AUTO"}}]}
+    bool_query = {
+        "must": [
+            {
+                "multi_match": {
+                    "query": query,
+                    "fields": ["text", "file_name^2"],
+                    "fuzziness": "AUTO",
+                }
+            }
+        ]
+    }
 
     if document_id:
         bool_query["filter"] = [{"term": {"document_id": document_id}}]
@@ -26,7 +40,9 @@ async def search_documents(
         "query": {"bool": bool_query},
         "size": size,
         "from": from_offset,
-        "highlight": {"fields": {"text": {"pre_tags": ["<mark>"], "post_tags": ["</mark>"]}}},
+        "highlight": {
+            "fields": {"text": {"pre_tags": ["<mark>"], "post_tags": ["</mark>"]}}
+        },
     }
 
     try:
