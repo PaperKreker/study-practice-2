@@ -10,14 +10,16 @@ def search_cache_key_builder(
     response: Response = None,
     **kwargs,
 ):
-    q = kwargs.get("q")
-    page = kwargs.get("page")
-    size = kwargs.get("size")
-    document_id = kwargs.get("document_id")
-    my_docs = kwargs.get("my_docs")
+    endpoint_kwargs = kwargs.get("kwargs") if "kwargs" in kwargs else kwargs
+
+    q = endpoint_kwargs.get("q")
+    page = endpoint_kwargs.get("page")
+    size = endpoint_kwargs.get("size")
+    document_id = endpoint_kwargs.get("document_id")
+    my_docs = endpoint_kwargs.get("my_docs")
 
     if my_docs:
-        current_user = kwargs.get("current_user")
+        current_user = endpoint_kwargs.get("current_user")
         user_segment = f"user:{current_user.id}" if current_user else "user:anonymous"
     else:
         user_segment = "global"
