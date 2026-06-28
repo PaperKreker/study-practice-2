@@ -17,7 +17,7 @@ const TABS = {
  * знаний университета». Реализует навигацию между поиском и загрузкой.
  */
 function App() {
-  const [activeTab, setActiveTab] = useState(TABS.SEARCH);
+  const [activeTab, setActiveTab] = useState(TABS.UPLOAD);
   const [authOpen, setAuthOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
 
@@ -86,7 +86,11 @@ function App() {
       </header>
 
       <main className="app-main">
-        {activeTab === TABS.SEARCH ? <SearchPage /> : <UploadPage />}
+        {activeTab === TABS.SEARCH ? (
+          <SearchPage onRequestLogin={() => setAuthOpen(true)} />
+        ) : (
+          <UploadPage onRequestLogin={() => setAuthOpen(true)} />
+        )}
       </main>
 
       {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}

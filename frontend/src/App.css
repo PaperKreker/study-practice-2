@@ -377,7 +377,7 @@
 
 .doc-list__row {
   display: grid;
-  grid-template-columns: 1fr 180px 120px;
+  grid-template-columns: 1fr 180px 120px 110px;
   gap: 12px;
   padding: 12px 16px;
   align-items: center;
@@ -412,6 +412,32 @@
 .doc-list__size {
   color: var(--color-text-muted);
   font-size: 14px;
+}
+
+.doc-list__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.danger-button {
+  background-color: var(--color-surface);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-soft);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.danger-button:hover:not(:disabled) {
+  background-color: var(--color-error-soft);
+  border-color: var(--color-error);
+}
+
+.danger-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* ===== Поиск ===== */

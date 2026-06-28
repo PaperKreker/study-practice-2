@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import SearchBar from '../components/SearchBar';
 import ResultCard from '../components/ResultCard';
 import Pagination from '../components/Pagination';
+import AuthRequired from '../components/AuthRequired';
 import {
   searchDocuments,
   fetchSearchHistory,
@@ -15,11 +16,12 @@ import { useAuth } from '../context/AuthContext';
  * Содержит поле поиска, карточки результатов с подсветкой,
  * пагинацию и сообщение о пустой выдаче.
  *
- * История поиска хранится на бэкенде и привязана к пользователю, поэтому
- * доступна только после входа в систему.
+ * Поиск и история запросов доступны только авторизованным пользователям.
+ *
+ * @param {{ onRequestLogin: () => void }} props
  */
-function SearchPage() {
-  const { user, token, isAuthenticated } = useAuth();
+function SearchPage({ onRequestLogin }) {
+  const { token, isAuthenticated } = useAuth();
 
   const [query, setQuery] = useState('');
   // Запрос, по которому реально выполнен поиск (для подсветки и пагинации).
@@ -36,18 +38,18 @@ function SearchPage() {
 
   /** Загружает историю поиска текущего пользователя с сервера. */
   const loadHistory = useCallback(async () => {
-    if (!isAuthenticated || !user) {
+    if (!isAuthenticated || !token) {
       setHistory([]);
       return;
     }
     try {
-      const { items } = await fetchSearchHistory(user.id, token);
+      const { items } = await fetchSearchHistory(token);
       setHistory(items);
     } catch (err) {
       // Историю показываем по возможности — её недоступность не критична.
       setHistory([]);
     }
-  }, [isAuthenticated, user, token]);
+  }, [isAuthenticated, token]);
 
   // Загружаем историю при входе пользователя и сбрасываем при выходе.
   useEffect(() => {
@@ -110,16 +112,16 @@ function SearchPage() {
 
   /** Очищает историю поиска пользователя на сервере. */
   const handleClearHistory = useCallback(async () => {
-    if (!isAuthenticated || !user) {
+    if (!isAuthenticated || !token) {
       return;
     }
     try {
-      await clearSearchHistory(user.id, token);
+      await clearSearchHistory(token);
       setHistory([]);
     } catch (err) {
       // Ошибку очистки игнорируем — состояние истории не меняем.
     }
-  }, [isAuthenticated, user, token]);
+  }, [isAuthenticated, token]);
 
   return (
     <div className="page">
@@ -129,55 +131,60 @@ function SearchPage() {
         документах.
       </p>
 
-      <SearchBar
-        value={query}
-        onChange={setQuery}
-        onSearch={handleSearch}
-        loading={loading}
-        history={history}
-        onClearHistory={handleClearHistory}
-      />
-
-      {error && <p className="error-text search-error">{error}</p>}
-
-      {hasSearched && !loading && !error && total > 0 && (
-        <p className="results-summary">Найдено совпадений: {total}</p>
-      )}
-
-      {loading && <p className="muted-text">Идёт поиск...</p>}
-
-      {/* Сообщение об отсутствии результатов */}
-      {hasSearched && !loading && !error && results.length === 0 && (
-        <div className="empty-state">
-          <div className="empty-state__icon" aria-hidden="true">
-            🔍
-          </div>
-          <p>
-            По вашему запросу ничего не найдено. Попробуйте изменить
-            формулировку
-          </p>
-        </div>
-      )}
-
-      {results.length > 0 && (
-        <div className="results-list">
-          {results.map((result, index) => (
-            <ResultCard
-              key={result.chunk_id || `${result.file_name}-${index}`}
-              result={result}
-              query={submittedQuery}
-            />
-          ))}
-        </div>
-      )}
-
-      {!loading && results.length > 0 && (
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
+      <AuthRequired
+        onRequestLogin={onRequestLogin}
+        message="Войдите в систему, чтобы искать по базе знаний."
+      >
+        <SearchBar
+          value={query}
+          onChange={setQuery}
+          onSearch={handleSearch}
+          loading={loading}
+          history={history}
+          onClearHistory={handleClearHistory}
         />
-      )}
+
+        {error && <p className="error-text search-error">{error}</p>}
+
+        {hasSearched && !loading && !error && total > 0 && (
+          <p className="results-summary">Найдено совпадений: {total}</p>
+        )}
+
+        {loading && <p className="muted-text">Идёт поиск...</p>}
+
+        {/* Сообщение об отсутствии результатов */}
+        {hasSearched && !loading && !error && results.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-state__icon" aria-hidden="true">
+              🔍
+            </div>
+            <p>
+              По вашему запросу ничего не найдено. Попробуйте изменить
+              формулировку
+            </p>
+          </div>
+        )}
+
+        {results.length > 0 && (
+          <div className="results-list">
+            {results.map((result, index) => (
+              <ResultCard
+                key={result.chunk_id || `${result.file_name}-${index}`}
+                result={result}
+                query={submittedQuery}
+              />
+            ))}
+          </div>
+        )}
+
+        {!loading && results.length > 0 && (
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        )}
+      </AuthRequired>
     </div>
   );
 }
