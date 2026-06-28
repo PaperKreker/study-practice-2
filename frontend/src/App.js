@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import './App.css';
 import UploadPage from './pages/UploadPage';
 import SearchPage from './pages/SearchPage';
+import AuthModal from './components/AuthModal';
+import { useAuth } from './context/AuthContext';
 
 // Вкладки приложения. Используем простое переключение состоянием, чтобы не
 // тянуть внешний роутер ради двух экранов.
@@ -16,6 +18,8 @@ const TABS = {
  */
 function App() {
   const [activeTab, setActiveTab] = useState(TABS.UPLOAD);
+  const [authOpen, setAuthOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
 
   return (
     <div className="app">
@@ -37,28 +41,59 @@ function App() {
             <button
                 type="button"
                 className={`app-nav__tab${
+                    activeTab === TABS.SEARCH ? ' app-nav__tab--active' : ''
+                }`}
+                onClick={() => setActiveTab(TABS.SEARCH)}
+            >
+              Поиск
+            </button>
+            <button
+                type="button"
+                className={`app-nav__tab${
                     activeTab === TABS.UPLOAD ? ' app-nav__tab--active' : ''
                 }`}
                 onClick={() => setActiveTab(TABS.UPLOAD)}
             >
               Загрузка
             </button>
-            <button
-              type="button"
-              className={`app-nav__tab${
-                activeTab === TABS.SEARCH ? ' app-nav__tab--active' : ''
-              }`}
-              onClick={() => setActiveTab(TABS.SEARCH)}
-            >
-              Поиск
-            </button>
           </nav>
+
+          <div className="app-auth">
+            {isAuthenticated ? (
+              <>
+                <span className="app-auth__user">
+                  <span aria-hidden="true">👤</span> {user?.username}
+                </span>
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={logout}
+                >
+                  Выйти
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setAuthOpen(true)}
+              >
+                Войти
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
       <main className="app-main">
-        {activeTab === TABS.SEARCH ? <SearchPage /> : <UploadPage />}
+        {activeTab === TABS.SEARCH ? (
+          <SearchPage onRequestLogin={() => setAuthOpen(true)} />
+        ) : (
+          <UploadPage onRequestLogin={() => setAuthOpen(true)} />
+        )}
       </main>
+
+      {authOpen && <AuthModal onClose={() => setAuthOpen(false)} />}
     </div>
   );
 }

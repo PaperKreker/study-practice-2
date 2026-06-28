@@ -10,7 +10,7 @@ import React, { useEffect, useRef, useState } from 'react';
  *   onChange: (value: string) => void,
  *   onSearch: (query: string) => void,
  *   loading?: boolean,
- *   history?: string[],
+ *   history?: Array<{ id?: string, query: string, results_count?: number }>,
  *   onClearHistory?: () => void,
  * }} props
  */
@@ -80,16 +80,19 @@ function SearchBar({
               </button>
             )}
           </li>
-          {history.map((query) => (
-            <li key={query}>
+          {history.map((item) => (
+            <li key={item.id || item.query}>
               <button
                 type="button"
                 className="search-history__item"
-                onClick={() => handleHistoryClick(query)}
+                onClick={() => handleHistoryClick(item.query)}
               >
-                <span className="search-history__icon" aria-hidden="true">
-                </span>
-                {query}
+                <span className="search-history__query">{item.query}</span>
+                {typeof item.results_count === 'number' && (
+                  <span className="search-history__count">
+                    {item.results_count}
+                  </span>
+                )}
               </button>
             </li>
           ))}
