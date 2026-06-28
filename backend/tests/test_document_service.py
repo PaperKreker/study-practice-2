@@ -127,19 +127,22 @@ def test_validate_file_generates_unique_document_ids() -> None:
 def test_create_document_metadata_persists_document() -> None:
     db = FakeDatabase()
     document_id = uuid4()
+    user_id = uuid4()
     metadata = {
         "document_id": str(document_id),
         "file_name": "lecture.pdf",
         "size_bytes": 128,
     }
 
-    document = asyncio.run(create_document_metadata(db, metadata, chunk_count=4))
+    document = asyncio.run(
+        create_document_metadata(db, metadata, chunk_count=4, user_id=user_id)
+    )
 
     assert document.id == document_id
     assert document.file_name == "lecture.pdf"
     assert document.size_bytes == 128
     assert document.chunk_count == 4
-    assert document.user_id is None
+    assert document.user_id == user_id
     assert db.added == [document]
     assert db.commit_count == 1
 
@@ -153,6 +156,15 @@ def test_get_all_documents_returns_items_and_total() -> None:
     assert items == expected_items
     assert total == 7
     assert len(db.statements) == 2
+
+
+def test_get_all_documents_filters_count_and_items_by_user() -> None:
+    user_id = uuid4()
+    db = FakeDatabase(results=[FakeResult(scalar=1), FakeResult(items=[object()])])
+
+    asyncio.run(get_all_documents(db, user_id=user_id))
+
+    assert all("documents.user_id" in str(statement) for statement in db.statements)
 
 
 def test_get_document_by_id_returns_none_for_invalid_uuid() -> None:

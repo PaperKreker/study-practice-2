@@ -14,6 +14,7 @@ class FakeUploadFile:
 
 
 def test_upload_returns_validation_result(monkeypatch: pytest.MonkeyPatch) -> None:
+    current_user = SimpleNamespace(id=uuid4())
     expected_result = {
         "document_id": str(uuid4()),
         "file_name": "lecture.pdf",
@@ -47,10 +48,13 @@ def test_upload_returns_validation_result(monkeypatch: pytest.MonkeyPatch) -> No
         assert len(chunks) == 1
         return 1
 
-    async def fake_create_document_metadata(db, metadata: dict, chunk_count: int):
+    async def fake_create_document_metadata(
+        db, metadata: dict, chunk_count: int, user_id
+    ):
         assert db is fake_db
         assert metadata == expected_result
         assert chunk_count == 1
+        assert user_id == current_user.id
 
     monkeypatch.setattr(documents, "validate_file", fake_validate_file)
     monkeypatch.setattr(documents, "process_document", fake_process_document)
@@ -60,7 +64,9 @@ def test_upload_returns_validation_result(monkeypatch: pytest.MonkeyPatch) -> No
     )
 
     fake_db = object()
-    result = asyncio.run(documents.upload(FakeUploadFile(), db=fake_db))
+    result = asyncio.run(
+        documents.upload(FakeUploadFile(), db=fake_db, current_user=current_user)
+    )
 
     assert result["document_id"] == expected_result["document_id"]
     assert result["file_name"] == "lecture.pdf"
@@ -96,25 +102,63 @@ def test_upload_does_not_save_metadata_when_indexing_fails(
     monkeypatch.setattr(documents, "create_document_metadata", unexpected_create)
 
     with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(documents.upload(FakeUploadFile(), db=object()))
+        asyncio.run(
+            documents.upload(
+                FakeUploadFile(),
+                db=object(),
+                current_user=SimpleNamespace(id=uuid4()),
+            )
+        )
 
     assert exc_info.value.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
 def test_list_documents_forwards_pagination(monkeypatch: pytest.MonkeyPatch) -> None:
     fake_db = object()
+    current_user = SimpleNamespace(id=uuid4())
     expected_items = [SimpleNamespace(file_name="lecture.pdf")]
 
-    async def fake_get_all_documents(db, limit: int, offset: int):
+    async def fake_get_all_documents(db, limit: int, offset: int, user_id):
         assert db is fake_db
         assert (limit, offset) == (20, 40)
+        assert user_id == current_user.id
         return expected_items, 81
 
     monkeypatch.setattr(documents, "get_all_documents", fake_get_all_documents)
 
-    result = asyncio.run(documents.list_documents(limit=20, offset=40, db=fake_db))
+    result = asyncio.run(
+        documents.list_documents(
+            limit=20,
+            offset=40,
+            my_docs=True,
+            db=fake_db,
+            current_user=current_user,
+        )
+    )
 
     assert result == {"total": 81, "items": expected_items}
+
+
+def test_list_documents_without_my_docs_omits_user_filter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_get_all_documents(db, limit: int, offset: int, user_id):
+        assert user_id is None
+        return [], 0
+
+    monkeypatch.setattr(documents, "get_all_documents", fake_get_all_documents)
+
+    result = asyncio.run(
+        documents.list_documents(
+            limit=50,
+            offset=0,
+            my_docs=False,
+            db=object(),
+            current_user=SimpleNamespace(id=uuid4()),
+        )
+    )
+
+    assert result == {"total": 0, "items": []}
 
 
 def test_get_document_returns_found_document(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -128,7 +172,16 @@ def test_get_document_returns_found_document(monkeypatch: pytest.MonkeyPatch) ->
 
     monkeypatch.setattr(documents, "get_document_by_id", fake_get_document_by_id)
 
-    assert asyncio.run(documents.get_document("document-id", db=fake_db)) is expected
+    assert (
+        asyncio.run(
+            documents.get_document(
+                "document-id",
+                db=fake_db,
+                current_user=SimpleNamespace(id=uuid4()),
+            )
+        )
+        is expected
+    )
 
 
 def test_get_document_returns_404_when_missing(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -138,7 +191,13 @@ def test_get_document_returns_404_when_missing(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(documents, "get_document_by_id", fake_get_document_by_id)
 
     with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(documents.get_document("missing", db=object()))
+        asyncio.run(
+            documents.get_document(
+                "missing",
+                db=object(),
+                current_user=SimpleNamespace(id=uuid4()),
+            )
+        )
 
     assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
 
@@ -147,7 +206,8 @@ def test_delete_document_removes_chunks_and_metadata(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     fake_db = object()
-    document = SimpleNamespace(file_name="lecture.pdf")
+    current_user = SimpleNamespace(id=uuid4())
+    document = SimpleNamespace(file_name="lecture.pdf", user_id=current_user.id)
 
     async def fake_get_document_by_id(db, document_id: str):
         return document
@@ -169,10 +229,37 @@ def test_delete_document_removes_chunks_and_metadata(
         documents, "delete_document_from_db", fake_delete_document_from_db
     )
 
-    result = asyncio.run(documents.delete_document("document-id", db=fake_db))
+    result = asyncio.run(
+        documents.delete_document("document-id", db=fake_db, current_user=current_user)
+    )
 
     assert result["document_id"] == "document-id"
     assert result["chunks_deleted"] == 3
+
+
+def test_delete_document_returns_403_for_another_users_document(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_get_document_by_id(db, document_id: str):
+        return SimpleNamespace(file_name="private.pdf", user_id=uuid4())
+
+    async def unexpected_delete(*args, **kwargs):
+        pytest.fail("another user's document must not be deleted")
+
+    monkeypatch.setattr(documents, "get_document_by_id", fake_get_document_by_id)
+    monkeypatch.setattr(documents, "delete_document_chunks", unexpected_delete)
+    monkeypatch.setattr(documents, "delete_document_from_db", unexpected_delete)
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            documents.delete_document(
+                "document-id",
+                db=object(),
+                current_user=SimpleNamespace(id=uuid4()),
+            )
+        )
+
+    assert exc_info.value.status_code == status.HTTP_403_FORBIDDEN
 
 
 def test_delete_document_returns_404_when_missing(
@@ -184,6 +271,12 @@ def test_delete_document_returns_404_when_missing(
     monkeypatch.setattr(documents, "get_document_by_id", fake_get_document_by_id)
 
     with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(documents.delete_document("missing", db=object()))
+        asyncio.run(
+            documents.delete_document(
+                "missing",
+                db=object(),
+                current_user=SimpleNamespace(id=uuid4()),
+            )
+        )
 
     assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND

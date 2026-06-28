@@ -16,10 +16,27 @@ class DummyElasticsearchClient:
         return self.response
 
 
+class DummyResult:
+    def __init__(self, items) -> None:
+        self.items = items
+
+    def scalars(self):
+        return self
+
+    def all(self):
+        return self.items
+
+
 class DummyDatabase:
-    def __init__(self) -> None:
+    def __init__(self, execute_results=None) -> None:
         self.added = []
         self.commit_count = 0
+        self.execute_results = list(execute_results or [])
+        self.statements = []
+
+    async def execute(self, statement):
+        self.statements.append(statement)
+        return self.execute_results.pop(0)
 
     def add(self, value) -> None:
         self.added.append(value)
@@ -52,6 +69,7 @@ def test_search_documents_builds_query_and_maps_hits(
     client = DummyElasticsearchClient(response)
     db = DummyDatabase()
     document_id = str(uuid4())
+    user_id = uuid4()
 
     monkeypatch.setattr(search_service, "get_es_client", lambda: client)
     monkeypatch.setattr(search_service.settings, "elasticsearch_index", "documents")
@@ -60,6 +78,7 @@ def test_search_documents_builds_query_and_maps_hits(
         search_service.search_documents(
             db=db,
             query="elastic",
+            user_id=user_id,
             page=3,
             size=5,
             document_id=document_id,
@@ -112,6 +131,7 @@ def test_search_documents_builds_query_and_maps_hits(
     assert len(db.added) == 1
     assert db.added[0].query == "elastic"
     assert db.added[0].results_count == 12
+    assert db.added[0].user_id == user_id
     assert str(db.added[0].document_id) == document_id
 
 
@@ -120,16 +140,67 @@ def test_search_documents_omits_filter_without_document_id(
 ) -> None:
     client = DummyElasticsearchClient({"hits": {"hits": []}})
     db = DummyDatabase()
+    user_id = uuid4()
 
     monkeypatch.setattr(search_service, "get_es_client", lambda: client)
 
-    assert asyncio.run(search_service.search_documents(db=db, query="elastic")) == {
+    assert asyncio.run(
+        search_service.search_documents(db=db, query="elastic", user_id=user_id)
+    ) == {
         "total": 0,
         "items": [],
     }
     assert "filter" not in client.calls[0]["body"]["query"]["bool"]
     assert db.commit_count == 1
     assert db.added[0].document_id is None
+    assert db.added[0].user_id == user_id
+
+
+def test_search_documents_filters_by_users_document_ids(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user_id = uuid4()
+    document_ids = [uuid4(), uuid4()]
+    db = DummyDatabase([DummyResult(document_ids)])
+    client = DummyElasticsearchClient({"hits": {"hits": []}})
+    monkeypatch.setattr(search_service, "get_es_client", lambda: client)
+
+    result = asyncio.run(
+        search_service.search_documents(
+            db=db,
+            query="private",
+            user_id=user_id,
+            filter_by_user=True,
+        )
+    )
+
+    assert result == {"total": 0, "items": []}
+    assert client.calls[0]["body"]["query"]["bool"]["filter"] == [
+        {"terms": {"document_id": [str(value) for value in document_ids]}}
+    ]
+    assert len(db.statements) == 1
+    assert db.added[0].user_id == user_id
+
+
+def test_search_documents_returns_empty_when_user_has_no_documents(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = DummyElasticsearchClient({"hits": {"hits": []}})
+    db = DummyDatabase([DummyResult([])])
+    monkeypatch.setattr(search_service, "get_es_client", lambda: client)
+
+    result = asyncio.run(
+        search_service.search_documents(
+            db=db,
+            query="private",
+            user_id=uuid4(),
+            filter_by_user=True,
+        )
+    )
+
+    assert result == {"total": 0, "items": []}
+    assert client.calls == []
+    assert db.commit_count == 0
 
 
 def test_search_documents_propagates_client_errors(
@@ -145,5 +216,7 @@ def test_search_documents_propagates_client_errors(
 
     with pytest.raises(RuntimeError, match="search failed"):
         asyncio.run(
-            search_service.search_documents(db=DummyDatabase(), query="elastic")
+            search_service.search_documents(
+                db=DummyDatabase(), query="elastic", user_id=uuid4()
+            )
         )
