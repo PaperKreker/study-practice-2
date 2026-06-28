@@ -52,3 +52,60 @@ test('renders errors and disables refresh while loading', () => {
 
   expect(screen.getByRole('button')).toBeDisabled();
 });
+
+test('allows deleting only the current users document', () => {
+  const onDelete = jest.fn();
+  const ownDocument = {
+    id: 'own-document',
+    user_id: 'user-1',
+    file_name: 'own.pdf',
+    size_bytes: 100,
+  };
+
+  render(
+    <DocumentList
+      documents={[
+        ownDocument,
+        {
+          id: 'another-document',
+          user_id: 'user-2',
+          file_name: 'another.pdf',
+          size_bytes: 200,
+        },
+      ]}
+      loading={false}
+      error={null}
+      onRefresh={jest.fn()}
+      currentUserId="user-1"
+      onDelete={onDelete}
+      deletingId={null}
+    />
+  );
+
+  expect(screen.queryByRole('button', { name: 'Удалить another.pdf' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: 'Удалить own.pdf' }));
+  expect(onDelete).toHaveBeenCalledWith(ownDocument);
+});
+
+test('disables delete action while document is being deleted', () => {
+  render(
+    <DocumentList
+      documents={[
+        {
+          id: 'own-document',
+          user_id: 'user-1',
+          file_name: 'own.pdf',
+          size_bytes: 100,
+        },
+      ]}
+      loading={false}
+      error={null}
+      onRefresh={jest.fn()}
+      currentUserId="user-1"
+      onDelete={jest.fn()}
+      deletingId="own-document"
+    />
+  );
+
+  expect(screen.getByRole('button', { name: 'Удалить own.pdf' })).toBeDisabled();
+});
