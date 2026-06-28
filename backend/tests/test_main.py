@@ -16,6 +16,14 @@ def test_document_router_is_registered() -> None:
     paths = set(main.app.openapi()["paths"])
 
     assert "/api/v1/documents/upload" in paths
+    assert "/api/v1/documents" in paths
+    assert "/api/v1/documents/{document_id}" in paths
+    assert "/api/v1/search" in paths
+    assert "/api/v1/search/history" in paths
+    assert "/api/v1/users/register" in paths
+    assert "/api/v1/users/login" in paths
+    assert "/api/v1/users/me" in paths
+    assert "/api/v1/documents/search" not in paths
 
 
 def test_root_response() -> None:

@@ -84,14 +84,14 @@ async def process_document(
 
 
 async def create_document_metadata(
-    db: AsyncSession, metadata: dict, chunk_count: int
+    db: AsyncSession, metadata: dict, chunk_count: int, user_id: uuid.UUID
 ) -> Document:
     db_document = Document(
         id=uuid.UUID(metadata["document_id"]),
         file_name=metadata["file_name"],
         size_bytes=metadata["size_bytes"],
         chunk_count=chunk_count,
-        user_id=None,
+        user_id=user_id,
     )
     db.add(db_document)
     await db.commit()
@@ -102,15 +102,21 @@ async def get_all_documents(
     db: AsyncSession,
     limit: int = 50,
     offset: int = 0,
+    user_id: uuid.UUID | None = None,  # Новый параметр
 ) -> tuple[list[Document], int]:
-    count_result = await db.execute(select(func.count()).select_from(Document))
+
+    query = select(Document)
+    count_query = select(func.count()).select_from(Document)
+
+    if user_id:
+        query = query.where(Document.user_id == user_id)
+        count_query = count_query.where(Document.user_id == user_id)
+
+    count_result = await db.execute(count_query)
     total = count_result.scalar_one()
 
     result = await db.execute(
-        select(Document)
-        .order_by(Document.uploaded_at.desc())
-        .limit(limit)
-        .offset(offset)
+        query.order_by(Document.uploaded_at.desc()).limit(limit).offset(offset)
     )
     items = list(result.scalars().all())
 

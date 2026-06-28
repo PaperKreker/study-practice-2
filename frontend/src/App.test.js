@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from './App';
 
 // Глобально подменяем fetch, чтобы компоненты, делающие запросы при монтировании
@@ -16,20 +16,25 @@ afterEach(() => {
   jest.resetAllMocks();
 });
 
-test('отображает заголовок приложения', () => {
+async function renderApp() {
   render(<App />);
+  await waitFor(() => {
+    expect(global.fetch).toHaveBeenCalledWith('/api/v1/documents');
+  });
+}
+
+test('отображает заголовок приложения', async () => {
+  await renderApp();
   expect(screen.getByText('База знаний')).toBeInTheDocument();
 });
 
-test('по умолчанию открыта вкладка поиска', () => {
-  render(<App />);
-  expect(
-    screen.getByPlaceholderText(/Введите поисковый запрос/i)
-  ).toBeInTheDocument();
+test('по умолчанию открыта вкладка загрузки', async () => {
+  await renderApp();
+  expect(screen.getByText('Загрузка документов')).toBeInTheDocument();
 });
 
-test('переключается на вкладку загрузки', () => {
-  render(<App />);
-  fireEvent.click(screen.getByRole('button', { name: 'Загрузка' }));
-  expect(screen.getByText('Загрузка документов')).toBeInTheDocument();
+test('переключается на вкладку поиска', async () => {
+  await renderApp();
+  fireEvent.click(screen.getByRole('button', { name: 'Поиск' }));
+  expect(screen.getByPlaceholderText(/Введите поисковый запрос/i)).toBeInTheDocument();
 });
