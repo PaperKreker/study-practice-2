@@ -1,41 +1,16 @@
 /**
  * Сервисный слой для взаимодействия с REST API бэкенда.
  *
- * Контракт API (согласуется с бэкенд-командой):
- *   POST /api/v1/documents/upload  — загрузка файла (multipart, поле "file")
- *   GET  /api/v1/documents         — список загруженных документов
- *   GET  /api/v1/documents/{id}    — статус конкретного документа (для опроса индексации)
- *   GET  /api/v1/search?q=&page=&size= — полнотекстовый поиск
+ * Контракт API:
+ *   POST   /api/v1/documents/upload          — загрузка файла (multipart, поле "file")
+ *   GET    /api/v1/documents                 — список загруженных документов
+ *   GET    /api/v1/documents/{id}            — статус конкретного документа
+ *   GET    /api/v1/search?q=&page=&size=     — полнотекстовый поиск
+ *   GET    /api/v1/search/history/{user_id}  — история поисковых запросов пользователя
+ *   DELETE /api/v1/search/history/{user_id}  — очистка истории пользователя
  */
-import { API_BASE_URL, PAGE_SIZE } from '../config';
-
-/** Собирает абсолютный URL из базового адреса и пути. */
-function buildUrl(path) {
-  return `${API_BASE_URL}${path}`;
-}
-
-/**
- * Извлекает человекочитаемое сообщение об ошибке из ответа сервера.
- * @param {Response} response - объект ответа fetch
- * @returns {Promise<string>} текст ошибки
- */
-async function extractErrorMessage(response) {
-  try {
-    const data = await response.json();
-    // FastAPI обычно кладёт описание в поле detail
-    if (data && data.detail) {
-      return typeof data.detail === 'string'
-        ? data.detail
-        : JSON.stringify(data.detail);
-    }
-    if (data && data.message) {
-      return data.message;
-    }
-  } catch (e) {
-    // тело не является JSON — игнорируем
-  }
-  return `Ошибка сервера (${response.status})`;
-}
+import { PAGE_SIZE } from '../config';
+import { buildUrl, authHeaders, extractErrorMessage } from './http';
 
 /**
  * Загружает один файл на сервер с отслеживанием прогресса загрузки.
@@ -97,7 +72,7 @@ export async function fetchDocuments() {
     throw new Error(await extractErrorMessage(response));
   }
   const data = await response.json();
-  // Поддерживаем как { documents: [...] }, так и просто [...]
+  // Поддерживаем как { items: [...] }, так и просто [...]
   return Array.isArray(data) ? data : data.items || [];
 }
 
@@ -117,29 +92,69 @@ export async function fetchDocumentStatus(id) {
 
 /**
  * Выполняет полнотекстовый поиск по документам.
+ * Если передан токен, он отправляется в заголовке — тогда бэкенд связывает
+ * запрос с пользователем и сохраняет его в истории поиска.
  *
  * @param {string} query - поисковый запрос
  * @param {number} page - номер страницы (с 1)
  * @param {number} size - размер страницы
+ * @param {string|null} token - токен доступа (необязательно)
  * @returns {Promise<{ results: Array, total: number }>} результаты и общее число совпадений
  */
-export async function searchDocuments(query, page = 1, size = PAGE_SIZE) {
+export async function searchDocuments(query, page = 1, size = PAGE_SIZE, token = null) {
   const params = new URLSearchParams({
     q: query,
     page: String(page),
     size: String(size),
   });
-  const response = await fetch(buildUrl(`/api/v1/search?${params.toString()}`));
+  const response = await fetch(buildUrl(`/api/v1/search?${params.toString()}`), {
+    headers: { ...authHeaders(token) },
+  });
   if (!response.ok) {
     throw new Error(await extractErrorMessage(response));
   }
   const data = await response.json();
-
-  // Нормализуем ответ: бэкенд может вернуть { results, total } или просто массив.
-  if (Array.isArray(data)) {
-    return { results: data, total: data.length };
-  }
-  const results = data.items || data.results || data.hits || [];
+  const results = data.items || [];
   const total = typeof data.total === 'number' ? data.total : results.length;
   return { results, total };
+}
+
+/**
+ * Возвращает историю поисковых запросов пользователя.
+ * @param {string} userId - идентификатор пользователя
+ * @param {string} token - токен доступа
+ * @param {{ limit?: number, offset?: number }} options - параметры пагинации
+ * @returns {Promise<{ items: Array, total: number }>} элементы истории и их общее число
+ */
+export async function fetchSearchHistory(userId, token, { limit = 50, offset = 0 } = {}) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  const response = await fetch(
+    buildUrl(`/api/v1/search/history/?${params.toString()}`),
+    { headers: { ...authHeaders(token) } }
+  );
+  if (!response.ok) {
+    throw new Error(await extractErrorMessage(response));
+  }
+  const data = await response.json();
+  return { items: data.items || [], total: data.total || 0 };
+}
+
+/**
+ * Очищает историю поисковых запросов пользователя.
+ * @param {string} userId - идентификатор пользователя
+ * @param {string} token - токен доступа
+ * @returns {Promise<{ deleted: number, message: string }>} результат удаления
+ */
+export async function clearSearchHistory(userId, token) {
+  const response = await fetch(buildUrl(`/api/v1/search/history/${userId}`), {
+    method: 'DELETE',
+    headers: { ...authHeaders(token) },
+  });
+  if (!response.ok) {
+    throw new Error(await extractErrorMessage(response));
+  }
+  return response.json();
 }

@@ -9,6 +9,7 @@ import {
   fetchDocuments,
   fetchDocumentStatus,
 } from '../services/api';
+import {isAuthenticated} from "../context/AuthContext";
 
 // Параметры опроса статуса индексации.
 const POLL_INTERVAL_MS = 1500;
@@ -172,6 +173,17 @@ function UploadPage() {
   const handleRemove = useCallback((localId) => {
     setQueue((prev) => prev.filter((item) => item.localId !== localId));
   }, []);
+
+  if (!isAuthenticated()) {
+    return (
+        <div className="page">
+          <h1 className="page-title">Загрузка документов</h1>
+          <p className="page-subtitle">
+            Для загрузки файлов необходима авторизация.
+          </p>
+        </div>
+    );
+  }
 
   return (
     <div className="page">

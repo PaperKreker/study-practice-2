@@ -1,21 +1,26 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import SearchBar from '../components/SearchBar';
 import ResultCard from '../components/ResultCard';
 import Pagination from '../components/Pagination';
-import { searchDocuments } from '../services/api';
-import { PAGE_SIZE } from '../config';
 import {
-  getSearchHistory,
-  addSearchHistory,
+  searchDocuments,
+  fetchSearchHistory,
   clearSearchHistory,
-} from '../services/searchHistory';
+} from '../services/api';
+import { PAGE_SIZE } from '../config';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Страница поиска по документам.
  * Содержит поле поиска, карточки результатов с подсветкой,
  * пагинацию и сообщение о пустой выдаче.
+ *
+ * История поиска хранится на бэкенде и привязана к пользователю, поэтому
+ * доступна только после входа в систему.
  */
 function SearchPage() {
+  const { user, token, isAuthenticated } = useAuth();
+
   const [query, setQuery] = useState('');
   // Запрос, по которому реально выполнен поиск (для подсветки и пагинации).
   const [submittedQuery, setSubmittedQuery] = useState('');
@@ -25,44 +30,70 @@ function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
-  const [history, setHistory] = useState(() => getSearchHistory());
+  const [history, setHistory] = useState([]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  /** Выполняет запрос к API для конкретной страницы выдачи. */
-  const runSearch = useCallback(async (searchQuery, targetPage) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { results: items, total: totalCount } = await searchDocuments(
-        searchQuery,
-        targetPage
-      );
-      setResults(items);
-      setTotal(totalCount);
-      setPage(targetPage);
-    } catch (err) {
-      setError(err.message || 'Не удалось выполнить поиск');
-      setResults([]);
-      setTotal(0);
-    } finally {
-      setLoading(false);
-      setHasSearched(true);
+  /** Загружает историю поиска текущего пользователя с сервера. */
+  const loadHistory = useCallback(async () => {
+    if (!isAuthenticated || !user) {
+      setHistory([]);
+      return;
     }
-  }, []);
+    try {
+      const { items } = await fetchSearchHistory(user.id, token);
+      setHistory(items);
+    } catch (err) {
+      // Историю показываем по возможности — её недоступность не критична.
+      setHistory([]);
+    }
+  }, [isAuthenticated, user, token]);
+
+  // Загружаем историю при входе пользователя и сбрасываем при выходе.
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
+  /** Выполняет запрос к API для конкретной страницы выдачи. */
+  const runSearch = useCallback(
+    async (searchQuery, targetPage) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { results: items, total: totalCount } = await searchDocuments(
+          searchQuery,
+          targetPage,
+          PAGE_SIZE,
+          token
+        );
+        setResults(items);
+        setTotal(totalCount);
+        setPage(targetPage);
+      } catch (err) {
+        setError(err.message || 'Не удалось выполнить поиск');
+        setResults([]);
+        setTotal(0);
+      } finally {
+        setLoading(false);
+        setHasSearched(true);
+      }
+    },
+    [token]
+  );
 
   /** Обработчик нового поиска (по кнопке/Enter/клику в истории). */
   const handleSearch = useCallback(
-    (rawQuery) => {
+    async (rawQuery) => {
       const trimmed = (rawQuery || '').trim();
       if (!trimmed) {
         return;
       }
       setSubmittedQuery(trimmed);
-      setHistory(addSearchHistory(trimmed));
-      runSearch(trimmed, 1);
+      await runSearch(trimmed, 1);
+      // Бэкенд сохраняет запрос в истории — перечитываем её для актуальности.
+      loadHistory();
     },
-    [runSearch]
+    [runSearch, loadHistory]
   );
 
   /** Переход на другую страницу выдачи. */
@@ -77,9 +108,18 @@ function SearchPage() {
     [runSearch, submittedQuery, totalPages, page]
   );
 
-  const handleClearHistory = useCallback(() => {
-    setHistory(clearSearchHistory());
-  }, []);
+  /** Очищает историю поиска пользователя на сервере. */
+  const handleClearHistory = useCallback(async () => {
+    if (!isAuthenticated || !user) {
+      return;
+    }
+    try {
+      await clearSearchHistory(user.id, token);
+      setHistory([]);
+    } catch (err) {
+      // Ошибку очистки игнорируем — состояние истории не меняем.
+    }
+  }, [isAuthenticated, user, token]);
 
   return (
     <div className="page">
@@ -100,12 +140,8 @@ function SearchPage() {
 
       {error && <p className="error-text search-error">{error}</p>}
 
-      {hasSearched && !loading && !error && (
-        <p className="results-summary">
-          {total > 0
-            ? `Найдено совпадений: ${total}`
-            : null}
-        </p>
+      {hasSearched && !loading && !error && total > 0 && (
+        <p className="results-summary">Найдено совпадений: {total}</p>
       )}
 
       {loading && <p className="muted-text">Идёт поиск...</p>}
