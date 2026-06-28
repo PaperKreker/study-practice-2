@@ -61,7 +61,9 @@ def test_empty_documents_return_no_chunks() -> None:
         ("broken_formatting.docx", ".docx"),
     ],
 )
-def test_parse_document_raises_for_corrupted_fixtures(fixture_name: str, extension: str) -> None:
+def test_parse_document_raises_for_corrupted_fixtures(
+    fixture_name: str, extension: str
+) -> None:
     with pytest.raises(Exception):
         parse_document((FIXTURES_DIR / fixture_name).read_bytes(), extension, "broken")
 

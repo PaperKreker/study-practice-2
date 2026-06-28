@@ -36,13 +36,9 @@ class FakeDatabase:
 
 def test_get_user_history_returns_items_and_total() -> None:
     expected_items = [object(), object()]
-    db = FakeDatabase(
-        [FakeResult(scalar=5), FakeResult(items=expected_items)]
-    )
+    db = FakeDatabase([FakeResult(scalar=5), FakeResult(items=expected_items)])
 
-    items, total = asyncio.run(
-        get_user_history(db, str(uuid4()), limit=2, offset=2)
-    )
+    items, total = asyncio.run(get_user_history(db, str(uuid4()), limit=2, offset=2))
 
     assert items == expected_items
     assert total == 5

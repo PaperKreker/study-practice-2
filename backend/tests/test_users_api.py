@@ -30,7 +30,9 @@ def test_get_current_user_returns_active_user(monkeypatch: pytest.MonkeyPatch) -
     assert result is expected
 
 
-def test_get_current_user_rejects_invalid_token(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_get_current_user_rejects_invalid_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(users, "decode_access_token", lambda token: None)
 
     with pytest.raises(HTTPException) as exc_info:
