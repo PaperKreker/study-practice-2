@@ -55,7 +55,9 @@ def test_upload_returns_validation_result(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setattr(documents, "validate_file", fake_validate_file)
     monkeypatch.setattr(documents, "process_document", fake_process_document)
     monkeypatch.setattr(documents, "index_document_chunks", fake_index_document_chunks)
-    monkeypatch.setattr(documents, "create_document_metadata", fake_create_document_metadata)
+    monkeypatch.setattr(
+        documents, "create_document_metadata", fake_create_document_metadata
+    )
 
     fake_db = object()
     result = asyncio.run(documents.upload(FakeUploadFile(), db=fake_db))
@@ -160,8 +162,12 @@ def test_delete_document_removes_chunks_and_metadata(
         return True
 
     monkeypatch.setattr(documents, "get_document_by_id", fake_get_document_by_id)
-    monkeypatch.setattr(documents, "delete_document_chunks", fake_delete_document_chunks)
-    monkeypatch.setattr(documents, "delete_document_from_db", fake_delete_document_from_db)
+    monkeypatch.setattr(
+        documents, "delete_document_chunks", fake_delete_document_chunks
+    )
+    monkeypatch.setattr(
+        documents, "delete_document_from_db", fake_delete_document_from_db
+    )
 
     result = asyncio.run(documents.delete_document("document-id", db=fake_db))
 

@@ -22,7 +22,9 @@ def test_parse_uuid_rejects_invalid_value() -> None:
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_get_history_returns_validated_response(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_get_history_returns_validated_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     user_id = str(uuid4())
     expected_item = SimpleNamespace(
         id=uuid4(),
@@ -41,9 +43,7 @@ def test_get_history_returns_validated_response(monkeypatch: pytest.MonkeyPatch)
 
     monkeypatch.setattr(history, "get_user_history", fake_get_user_history)
 
-    result = asyncio.run(
-        history.get_history(user_id, limit=10, offset=20, db=fake_db)
-    )
+    result = asyncio.run(history.get_history(user_id, limit=10, offset=20, db=fake_db))
 
     assert result.total == 1
     assert result.items[0].query == "elastic"

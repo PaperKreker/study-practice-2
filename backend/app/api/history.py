@@ -9,6 +9,7 @@ from app.models.user import User
 
 router = APIRouter(prefix="/search/history", tags=["search history"])
 
+
 @router.get(
     "",
     response_model=HistoryListResponse,
@@ -20,11 +21,14 @@ async def get_history(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    items, total = await get_user_history(db, str(current_user.id), limit=limit, offset=offset)
+    items, total = await get_user_history(
+        db, str(current_user.id), limit=limit, offset=offset
+    )
     return HistoryListResponse(
         total=total,
         items=[HistoryItem.model_validate(item) for item in items],
     )
+
 
 @router.delete(
     "",

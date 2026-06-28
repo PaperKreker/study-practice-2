@@ -42,12 +42,12 @@ def test_create_user_persists_user_and_returns_token(
 ) -> None:
     db = FakeDatabase([None])
     monkeypatch.setattr(user_service, "hash_password", lambda value: "hashed")
-    monkeypatch.setattr(user_service, "create_access_token", lambda value: f"token:{value}")
+    monkeypatch.setattr(
+        user_service, "create_access_token", lambda value: f"token:{value}"
+    )
 
     result = asyncio.run(
-        user_service.create_user(
-            db, UserCreate(username="student", password="secret1")
-        )
+        user_service.create_user(db, UserCreate(username="student", password="secret1"))
     )
 
     assert db.added[0].username == "student"

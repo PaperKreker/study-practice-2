@@ -28,7 +28,9 @@ class DummyDatabase:
         self.commit_count += 1
 
 
-def test_search_documents_builds_query_and_maps_hits(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_search_documents_builds_query_and_maps_hits(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     response = {
         "hits": {
             "total": {"value": 12},
@@ -44,7 +46,7 @@ def test_search_documents_builds_query_and_maps_hits(monkeypatch: pytest.MonkeyP
                     },
                     "highlight": {"text": ["<mark>Elasticsearch</mark> text"]},
                 }
-            ]
+            ],
         }
     }
     client = DummyElasticsearchClient(response)
@@ -113,7 +115,9 @@ def test_search_documents_builds_query_and_maps_hits(monkeypatch: pytest.MonkeyP
     assert str(db.added[0].document_id) == document_id
 
 
-def test_search_documents_omits_filter_without_document_id(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_search_documents_omits_filter_without_document_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     client = DummyElasticsearchClient({"hits": {"hits": []}})
     db = DummyDatabase()
 
@@ -128,12 +132,18 @@ def test_search_documents_omits_filter_without_document_id(monkeypatch: pytest.M
     assert db.added[0].document_id is None
 
 
-def test_search_documents_propagates_client_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_search_documents_propagates_client_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class FailingElasticsearchClient:
         async def search(self, index: str, body: dict) -> dict:
             raise RuntimeError("search failed")
 
-    monkeypatch.setattr(search_service, "get_es_client", lambda: FailingElasticsearchClient())
+    monkeypatch.setattr(
+        search_service, "get_es_client", lambda: FailingElasticsearchClient()
+    )
 
     with pytest.raises(RuntimeError, match="search failed"):
-        asyncio.run(search_service.search_documents(db=DummyDatabase(), query="elastic"))
+        asyncio.run(
+            search_service.search_documents(db=DummyDatabase(), query="elastic")
+        )

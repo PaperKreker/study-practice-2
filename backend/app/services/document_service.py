@@ -102,9 +102,9 @@ async def get_all_documents(
     db: AsyncSession,
     limit: int = 50,
     offset: int = 0,
-    user_id: uuid.UUID | None = None, # Новый параметр
+    user_id: uuid.UUID | None = None,  # Новый параметр
 ) -> tuple[list[Document], int]:
-    
+
     query = select(Document)
     count_query = select(func.count()).select_from(Document)
 
@@ -116,9 +116,7 @@ async def get_all_documents(
     total = count_result.scalar_one()
 
     result = await db.execute(
-        query.order_by(Document.uploaded_at.desc())
-        .limit(limit)
-        .offset(offset)
+        query.order_by(Document.uploaded_at.desc()).limit(limit).offset(offset)
     )
     items = list(result.scalars().all())
 

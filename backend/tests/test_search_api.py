@@ -6,7 +6,9 @@ from fastapi import HTTPException
 from app.api import search
 
 
-def test_search_uses_page_size_and_document_filter(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_search_uses_page_size_and_document_filter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     captured = {}
     fake_db = object()
 
@@ -30,9 +32,7 @@ def test_search_uses_page_size_and_document_filter(monkeypatch: pytest.MonkeyPat
 
     search_handler = search.search.__wrapped__
     assert asyncio.run(
-        search_handler(
-            q="elastic", page=3, size=10, document_id="doc-1", db=fake_db
-        )
+        search_handler(q="elastic", page=3, size=10, document_id="doc-1", db=fake_db)
     ) == {
         "total": 1,
         "items": [],

@@ -10,7 +10,9 @@ class DummyElasticsearchClient:
     pass
 
 
-def test_index_document_chunks_sends_bulk_actions(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_index_document_chunks_sends_bulk_actions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     captured = {}
     client = DummyElasticsearchClient()
     chunks = [
@@ -63,11 +65,15 @@ def test_index_document_chunks_sends_bulk_actions(monkeypatch: pytest.MonkeyPatc
     ]
 
 
-def test_index_document_chunks_propagates_bulk_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_index_document_chunks_propagates_bulk_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     async def fake_async_bulk(es, actions):
         raise RuntimeError("bulk failed")
 
-    monkeypatch.setattr(indexing_service, "get_es_client", lambda: DummyElasticsearchClient())
+    monkeypatch.setattr(
+        indexing_service, "get_es_client", lambda: DummyElasticsearchClient()
+    )
     monkeypatch.setattr(indexing_service.helpers, "async_bulk", fake_async_bulk)
 
     with pytest.raises(RuntimeError, match="bulk failed"):

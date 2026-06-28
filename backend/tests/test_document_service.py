@@ -146,9 +146,7 @@ def test_create_document_metadata_persists_document() -> None:
 
 def test_get_all_documents_returns_items_and_total() -> None:
     expected_items = [object(), object()]
-    db = FakeDatabase(
-        results=[FakeResult(scalar=7), FakeResult(items=expected_items)]
-    )
+    db = FakeDatabase(results=[FakeResult(scalar=7), FakeResult(items=expected_items)])
 
     items, total = asyncio.run(get_all_documents(db, limit=2, offset=4))
 

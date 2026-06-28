@@ -26,7 +26,11 @@ router = APIRouter(prefix="/documents", tags=["documents"])
     response_model=UploadResponse,
     summary="Загрузка документа (PDF или DOCX) и его разбиение на чанки",
 )
-async def upload(file: UploadFile = File(...), db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def upload(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     metadata, file_bytes = await validate_file(file)
 
     _, ext = os.path.splitext((file.filename or "").lower())
@@ -49,7 +53,9 @@ async def upload(file: UploadFile = File(...), db: AsyncSession = Depends(get_db
             detail="Ошибка при сохранении документа в поисковый индекс.",
         )
 
-    await create_document_metadata(db=db, metadata=metadata, chunk_count=len(chunks), user_id=current_user.id)
+    await create_document_metadata(
+        db=db, metadata=metadata, chunk_count=len(chunks), user_id=current_user.id
+    )
 
     return {
         **metadata,
@@ -70,7 +76,9 @@ async def list_documents(
     current_user: User = Depends(get_current_user),
 ):
     user_filter = current_user.id if my_docs else None
-    items, total = await get_all_documents(db, limit=limit, offset=offset, user_id=user_filter)
+    items, total = await get_all_documents(
+        db, limit=limit, offset=offset, user_id=user_filter
+    )
     return {"total": total, "items": items}
 
 
@@ -80,7 +88,7 @@ async def list_documents(
     summary="Получить информацию о документе",
 )
 async def get_document(
-    document_id: str, 
+    document_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -99,7 +107,7 @@ async def get_document(
     summary="Удалить документ и его чанки",
 )
 async def delete_document(
-    document_id: str, 
+    document_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
