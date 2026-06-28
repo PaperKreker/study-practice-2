@@ -4,8 +4,6 @@ import {formatDate, formatFileSize} from '../utils/format';
 /**
  * Список уже загруженных документов с названием, датой загрузки и размером.
  * Для собственных документов пользователя показывает кнопку удаления.
- * Адаптивен: на широких экранах — таблица, на узких — карточки
- * (управляется через CSS).
  *
  * @param {{
  *   documents: Array,
@@ -64,9 +62,6 @@ function DocumentList({
             return (
               <div className="doc-list__row" role="row" key={id}>
                 <span className="doc-list__name" role="cell" title={doc.file_name}>
-                  <span className="doc-list__file-icon" aria-hidden="true">
-                    📄
-                  </span>
                   {doc.file_name}
                 </span>
                 <span className="doc-list__date" role="cell">

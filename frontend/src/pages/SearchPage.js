@@ -92,7 +92,6 @@ function SearchPage({ onRequestLogin }) {
       }
       setSubmittedQuery(trimmed);
       await runSearch(trimmed, 1);
-      // Бэкенд сохраняет запрос в истории — перечитываем её для актуальности.
       loadHistory();
     },
     [runSearch, loadHistory]

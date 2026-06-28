@@ -87,9 +87,6 @@ function SearchBar({
                 className="search-history__item"
                 onClick={() => handleHistoryClick(item.query)}
               >
-                <span className="search-history__icon" aria-hidden="true">
-                  🕘
-                </span>
                 <span className="search-history__query">{item.query}</span>
                 {typeof item.results_count === 'number' && (
                   <span className="search-history__count">
