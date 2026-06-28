@@ -65,9 +65,12 @@ async def upload(file: UploadFile = File(...), db: AsyncSession = Depends(get_db
 async def list_documents(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
+    my_docs: bool = Query(False, description="Вернуть только мои документы"),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    items, total = await get_all_documents(db, limit=limit, offset=offset)
+    user_filter = current_user.id if my_docs else None
+    items, total = await get_all_documents(db, limit=limit, offset=offset, user_id=user_filter)
     return {"total": total, "items": items}
 
 
@@ -76,7 +79,11 @@ async def list_documents(
     response_model=DocumentResponse,
     summary="Получить информацию о документе",
 )
-async def get_document(document_id: str, db: AsyncSession = Depends(get_db)):
+async def get_document(
+    document_id: str, 
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     doc = await get_document_by_id(db, document_id)
     if not doc:
         raise HTTPException(
@@ -91,12 +98,22 @@ async def get_document(document_id: str, db: AsyncSession = Depends(get_db)):
     status_code=status.HTTP_200_OK,
     summary="Удалить документ и его чанки",
 )
-async def delete_document(document_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_document(
+    document_id: str, 
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     doc = await get_document_by_id(db, document_id)
     if not doc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Документ {document_id} не найден",
+        )
+
+    if doc.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="У вас нет прав на удаление этого документа",
         )
 
     chunks_deleted = await delete_document_chunks(document_id)
