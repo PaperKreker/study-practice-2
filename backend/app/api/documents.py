@@ -24,7 +24,14 @@ router = APIRouter(prefix="/documents", tags=["documents"])
     "/upload",
     status_code=status.HTTP_201_CREATED,
     response_model=UploadResponse,
-    summary="Загрузка документа (PDF или DOCX) и его разбиение на чанки",
+    summary="Загрузка документа",
+    description="Загружает документ (PDF или DOCX), разбивает его на текстовые чанки и индексирует.",
+    responses={
+        400: {
+            "description": "Недопустимый формат файла (допустимы только PDF и DOCX) или превышен размер (20 МБ)."
+        },
+        500: {"description": "Ошибка при сохранении документа в поисковый индекс."},
+    },
 )
 async def upload(
     file: UploadFile = File(...),
@@ -75,8 +82,10 @@ async def upload(
 
 @router.get(
     "",
+    status_code=status.HTTP_200_OK,
     response_model=DocumentListResponse,
     summary="Получить список документов",
+    description="Получает список загруженных документов с поддержкой пагинации.",
 )
 async def list_documents(
     limit: int = Query(50, ge=1, le=200),
@@ -106,8 +115,11 @@ async def list_documents(
 
 @router.get(
     "/{document_id}",
+    status_code=status.HTTP_200_OK,
     response_model=DocumentResponse,
     summary="Получить информацию о документе",
+    description="Получает подробную информацию о конкретном документе по его идентификатору.",
+    responses={404: {"description": "Документ не найден."}},
 )
 async def get_document(
     document_id: str,
@@ -139,7 +151,12 @@ async def get_document(
 @router.delete(
     "/{document_id}",
     status_code=status.HTTP_200_OK,
-    summary="Удалить документ и его чанки",
+    summary="Удалить документ",
+    description="Удаляет документ из базы данных и все связанные с ним чанки из индекса Elasticsearch.",
+    responses={
+        403: {"description": "У вас нет прав на удаление этого документа."},
+        404: {"description": "Документ не найден."},
+    },
 )
 async def delete_document(
     document_id: str,

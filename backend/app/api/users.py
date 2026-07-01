@@ -56,6 +56,8 @@ async def get_current_user(
     status_code=status.HTTP_201_CREATED,
     response_model=TokenResponse,
     summary="Регистрация нового пользователя",
+    description="Регистрирует нового пользователя и возвращает токен доступа.",
+    responses={409: {"description": "Пользователь с таким именем уже существует."}},
 )
 async def register(body: UserCreate, db: AsyncSession = Depends(get_db)):
     """Регистрирует нового пользователя и возвращает токен доступа.
@@ -75,8 +77,14 @@ async def register(body: UserCreate, db: AsyncSession = Depends(get_db)):
 
 @router.post(
     "/login",
+    status_code=status.HTTP_200_OK,
     response_model=TokenResponse,
     summary="Вход в систему",
+    description="Аутентифицирует пользователя по логину и паролю и выдает токен доступа.",
+    responses={
+        401: {"description": "Неверный логин или пароль."},
+        403: {"description": "Аккаунт деактивирован."},
+    },
 )
 async def login(body: UserLogin, db: AsyncSession = Depends(get_db)):
     """Аутентифицирует пользователя по логину и паролю и выдает токен доступа.
@@ -96,8 +104,15 @@ async def login(body: UserLogin, db: AsyncSession = Depends(get_db)):
 
 @router.get(
     "/me",
+    status_code=status.HTTP_200_OK,
     response_model=UserResponse,
     summary="Получить текущего пользователя",
+    description="Возвращает данные текущего авторизованного пользователя.",
+    responses={
+        401: {
+            "description": "Недействительный или просроченный токен, либо пользователь не найден/деактивирован."
+        }
+    },
 )
 async def me(current_user: User = Depends(get_current_user)):
     """Возвращает данные текущего авторизованного пользователя.

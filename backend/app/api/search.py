@@ -17,6 +17,8 @@ router = APIRouter(tags=["search"])
     status_code=status.HTTP_200_OK,
     response_model=SearchResponse,
     summary="Поиск по документам",
+    description="Выполняет полнотекстовый поиск по загруженным в систему документам.",
+    responses={500: {"description": "Произошла ошибка при выполнении поиска."}},
 )
 @cache(expire=300, key_builder=search_cache_key_builder)
 async def search(
