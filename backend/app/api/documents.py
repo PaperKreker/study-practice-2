@@ -31,6 +31,16 @@ async def upload(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Загружает документ (PDF или DOCX), разбивает его на текстовые чанки и индексирует.
+
+    Args:
+        file (UploadFile): Загружаемый файл документа.
+        db (AsyncSession): Сессия подключения к базе данных.
+        current_user (User): Текущий авторизованный пользователь.
+
+    Returns:
+        dict: Словарь с метаданными документа и сообщением об успешной загрузке.
+    """
     metadata, file_bytes = await validate_file(file)
 
     _, ext = os.path.splitext((file.filename or "").lower())
@@ -75,6 +85,18 @@ async def list_documents(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Получает список загруженных документов с поддержкой пагинации.
+
+    Args:
+        limit (int): Максимальное количество возвращаемых документов.
+        offset (int): Смещение для пагинации (количество пропускаемых записей).
+        my_docs (bool): Флаг для фильтрации только по документам текущего пользователя.
+        db (AsyncSession): Сессия подключения к базе данных.
+        current_user (User): Текущий авторизованный пользователь.
+
+    Returns:
+        dict: Словарь с общим количеством документов (total) и списком объектов (items).
+    """
     user_filter = current_user.id if my_docs else None
     items, total = await get_all_documents(
         db, limit=limit, offset=offset, user_id=user_filter
@@ -92,6 +114,19 @@ async def get_document(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Получает подробную информацию о конкретном документе по его идентификатору.
+
+    Args:
+        document_id (str): Уникальный идентификатор (UUID) документа.
+        db (AsyncSession): Сессия подключения к базе данных.
+        current_user (User): Текущий авторизованный пользователь.
+
+    Returns:
+        Document: Объект модели документа.
+
+    Raises:
+        HTTPException: Если документ с указанным ID не найден (ошибка 404).
+    """
     doc = await get_document_by_id(db, document_id)
     if not doc:
         raise HTTPException(
@@ -111,6 +146,19 @@ async def delete_document(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Удаляет документ из базы данных и все связанные с ним чанки из индекса Elasticsearch.
+
+    Args:
+        document_id (str): Уникальный идентификатор удаляемого документа.
+        db (AsyncSession): Сессия подключения к базе данных.
+        current_user (User): Текущий авторизованный пользователь.
+
+    Returns:
+        dict: Словарь с ID удаленного документа и количеством очищенных чанков.
+
+    Raises:
+        HTTPException: Если документ не найден (404) или у пользователя нет прав на его удаление (403).
+    """
     doc = await get_document_by_id(db, document_id)
     if not doc:
         raise HTTPException(

@@ -15,7 +15,17 @@ CHUNK_OVERLAP = 100
 
 @dataclass
 class TextChunk:
-    chunk_id: str  # формат: "{document_id}_{порядковый_номер}"
+    """Фрагмент текста, извлеченный из документа для дальнейшей индексации.
+
+    Attributes:
+        chunk_id (str): Уникальный идентификатор чанка в формате
+            "{document_id}_{порядковый_номер}".
+        page_number (int): Номер страницы (для PDF) или условный номер (для DOCX),
+            с которой был извлечен текст.
+        text (str): Содержимое текстового фрагмента.
+    """
+
+    chunk_id: str
     page_number: int
     text: str
 
@@ -26,6 +36,17 @@ def _split_into_chunks(
     chunk_id_offset: int,
     document_id: str,
 ) -> list[TextChunk]:
+    """Разбивает сплошной массив текста на сегменты заданного размера с перекрытием.
+
+    Args:
+        text (str): Исходный текст, требующий разделения.
+        page_number (int): Номер страницы, с которой был извлечен текст.
+        chunk_id_offset (int): Числовое смещение для генерации уникального идентификатора чанка.
+        document_id (str): Идентификатор родительского документа.
+
+    Returns:
+        list[TextChunk]: Итоговый список сформированных текстовых чанков.
+    """
     chunks: list[TextChunk] = []
     start = 0
     local_id = 0
@@ -50,6 +71,18 @@ def _split_into_chunks(
 
 
 def parse_pdf(file_bytes: bytes, document_id: str) -> list[TextChunk]:
+    """Извлекает текст из PDF-файла постранично и разбивает его на чанки.
+
+    Пустые страницы пропускаются. Нумерация чанков внутри документа
+    сквозная (продолжается от страницы к странице).
+
+    Args:
+        file_bytes (bytes): Содержимое PDF-файла в байтах.
+        document_id (str): Идентификатор родительского документа.
+
+    Returns:
+        list[TextChunk]: Список текстовых чанков, извлеченных из всех страниц документа.
+    """
     chunks: list[TextChunk] = []
     chunk_id_offset = 0
 
@@ -73,6 +106,19 @@ def parse_pdf(file_bytes: bytes, document_id: str) -> list[TextChunk]:
 
 
 def _extract_table_as_text(table) -> str:
+    """Преобразует таблицу DOCX в текстовое представление в виде строк с разделителями.
+
+    Повторяющиеся подряд значения ячеек в строке схлопываются (убираются
+    дубликаты, возникающие из-за объединенных ячеек). После первой строки
+    (заголовка) добавляется визуальный разделитель.
+
+    Args:
+        table: Объект таблицы python-docx (docx.table.Table).
+
+    Returns:
+        str: Текстовое представление таблицы, где строки разделены переносами,
+        а ячейки — символом "|".
+    """
     rows: list[str] = []
     for i, row in enumerate(table.rows):
         cells = [cell.text.strip() for cell in row.cells]
@@ -87,6 +133,20 @@ def _extract_table_as_text(table) -> str:
 
 
 def parse_docx(file_bytes: bytes, document_id: str) -> list[TextChunk]:
+    """Извлекает текст из DOCX-файла (параграфы и таблицы) и разбивает его на чанки.
+
+    Обходит тело документа в исходном порядке следования элементов, сохраняя
+    как обычные параграфы, так и таблицы (преобразованные в текст). Пустые
+    параграфы и таблицы без содержимого пропускаются. Весь извлеченный текст
+    объединяется в единый блок и делится на чанки как одна условная страница.
+
+    Args:
+        file_bytes (bytes): Содержимое DOCX-файла в байтах.
+        document_id (str): Идентификатор родительского документа.
+
+    Returns:
+        list[TextChunk]: Список текстовых чанков, извлеченных из документа.
+    """
     doc = DocxDocument(io.BytesIO(file_bytes))
 
     body_elements: list[str] = []
@@ -102,11 +162,13 @@ def parse_docx(file_bytes: bytes, document_id: str) -> list[TextChunk]:
             text = p_obj.text.strip()
             if text:
                 body_elements.append(text)
+                para_index += 1
         elif tag == "tbl":
             t_obj = Table(child, doc)
             table_text = _extract_table_as_text(t_obj)
             if table_text.strip():
                 body_elements.append(table_text)
+                table_index += 1
 
     full_text = "\n\n".join(body_elements)
     chunks = _split_into_chunks(
@@ -125,6 +187,19 @@ def parse_docx(file_bytes: bytes, document_id: str) -> list[TextChunk]:
 def parse_document(
     file_bytes: bytes, extension: str, document_id: str
 ) -> list[TextChunk]:
+    """Определяет тип файла и вызывает соответствующий парсер для извлечения сырого текста.
+
+    Args:
+        file_bytes (bytes): Байт-код файла.
+        extension (str): Расширение файла.
+        document_id (str): Идентификатор родительского документа для привязки.
+
+    Returns:
+        list[TextChunk]: Список извлеченных текстовых фрагментов.
+
+    Raises:
+        ValueError: Если в функцию передан неподдерживаемый формат файла.
+    """
     if extension == ".pdf":
         return parse_pdf(file_bytes, document_id)
     elif extension == ".docx":

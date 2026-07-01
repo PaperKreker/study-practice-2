@@ -20,6 +20,20 @@ async def search_documents(
     document_id: str | None = None,
     filter_by_user: bool = False,
 ) -> dict:
+    """Осуществляет поиск релевантных текстовых чанков в Elasticsearch и сохраняет запрос в историю.
+
+    Args:
+        db (AsyncSession): Сессия базы данных для записи истории поиска.
+        query (str): Поисковый запрос.
+        user_id (uuid.UUID): Уникальный идентификатор пользователя, выполняющего поиск.
+        page (int, optional): Запрашиваемая страница результатов. По умолчанию 1.
+        size (int, optional): Количество результатов в выдаче. По умолчанию 10.
+        document_id (str | None, optional): Фильтр поиска по конкретному документу.
+        filter_by_user (bool, optional): Искать исключительно по документам владельца запроса.
+
+    Returns:
+        dict: Словарь с общим числом найденных совпадений (total) и массивом данных (items).
+    """
     es = get_es_client()
     index_name = settings.elasticsearch_index
 

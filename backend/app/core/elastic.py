@@ -21,12 +21,25 @@ INDEX_MAPPINGS = {
 
 
 def get_es_client() -> AsyncElasticsearch:
+    """Возвращает инициализированный клиент Elasticsearch.
+
+    Returns:
+        AsyncElasticsearch: Активный клиент Elasticsearch.
+
+    Raises:
+        RuntimeError: Если клиент еще не был инициализирован через init_elasticsearch().
+    """
     if es_client is None:
         raise RuntimeError("Elasticsearch client не инициализирован")
     return es_client
 
 
 async def init_elasticsearch() -> None:
+    """Инициализирует клиент Elasticsearch и создает поисковый индекс, если он отсутствует.
+
+    Использует адрес подключения и имя индекса из настроек приложения.
+    Вызывается при старте приложения.
+    """
     global es_client
 
     logger.debug(
@@ -45,6 +58,10 @@ async def init_elasticsearch() -> None:
 
 
 async def close_elasticsearch() -> None:
+    """Закрывает соединение с Elasticsearch и сбрасывает глобальный клиент.
+
+    Вызывается при остановке приложения для корректного освобождения ресурсов.
+    """
     global es_client
     if es_client is not None:
         await es_client.close()
