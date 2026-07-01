@@ -24,13 +24,30 @@ router = APIRouter(prefix="/documents", tags=["documents"])
     "/upload",
     status_code=status.HTTP_201_CREATED,
     response_model=UploadResponse,
-    summary="Загрузка документа (PDF или DOCX) и его разбиение на чанки",
+    summary="Загрузка документа",
+    description="Загружает документ (PDF или DOCX), разбивает его на текстовые чанки и индексирует.",
+    responses={
+        400: {
+            "description": "Недопустимый формат файла (допустимы только PDF и DOCX) или превышен размер (20 МБ)."
+        },
+        500: {"description": "Ошибка при сохранении документа в поисковый индекс."},
+    },
 )
 async def upload(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Загружает документ (PDF или DOCX), разбивает его на текстовые чанки и индексирует.
+
+    Args:
+        file (UploadFile): Загружаемый файл документа.
+        db (AsyncSession): Сессия подключения к базе данных.
+        current_user (User): Текущий авторизованный пользователь.
+
+    Returns:
+        dict: Словарь с метаданными документа и сообщением об успешной загрузке.
+    """
     metadata, file_bytes = await validate_file(file)
 
     _, ext = os.path.splitext((file.filename or "").lower())
@@ -65,8 +82,10 @@ async def upload(
 
 @router.get(
     "",
+    status_code=status.HTTP_200_OK,
     response_model=DocumentListResponse,
     summary="Получить список документов",
+    description="Получает список загруженных документов с поддержкой пагинации.",
 )
 async def list_documents(
     limit: int = Query(50, ge=1, le=200),
@@ -75,6 +94,18 @@ async def list_documents(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Получает список загруженных документов с поддержкой пагинации.
+
+    Args:
+        limit (int): Максимальное количество возвращаемых документов.
+        offset (int): Смещение для пагинации (количество пропускаемых записей).
+        my_docs (bool): Флаг для фильтрации только по документам текущего пользователя.
+        db (AsyncSession): Сессия подключения к базе данных.
+        current_user (User): Текущий авторизованный пользователь.
+
+    Returns:
+        dict: Словарь с общим количеством документов (total) и списком объектов (items).
+    """
     user_filter = current_user.id if my_docs else None
     items, total = await get_all_documents(
         db, limit=limit, offset=offset, user_id=user_filter
@@ -84,14 +115,30 @@ async def list_documents(
 
 @router.get(
     "/{document_id}",
+    status_code=status.HTTP_200_OK,
     response_model=DocumentResponse,
     summary="Получить информацию о документе",
+    description="Получает подробную информацию о конкретном документе по его идентификатору.",
+    responses={404: {"description": "Документ не найден."}},
 )
 async def get_document(
     document_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Получает подробную информацию о конкретном документе по его идентификатору.
+
+    Args:
+        document_id (str): Уникальный идентификатор (UUID) документа.
+        db (AsyncSession): Сессия подключения к базе данных.
+        current_user (User): Текущий авторизованный пользователь.
+
+    Returns:
+        Document: Объект модели документа.
+
+    Raises:
+        HTTPException: Если документ с указанным ID не найден (ошибка 404).
+    """
     doc = await get_document_by_id(db, document_id)
     if not doc:
         raise HTTPException(
@@ -104,13 +151,31 @@ async def get_document(
 @router.delete(
     "/{document_id}",
     status_code=status.HTTP_200_OK,
-    summary="Удалить документ и его чанки",
+    summary="Удалить документ",
+    description="Удаляет документ из базы данных и все связанные с ним чанки из индекса Elasticsearch.",
+    responses={
+        403: {"description": "У вас нет прав на удаление этого документа."},
+        404: {"description": "Документ не найден."},
+    },
 )
 async def delete_document(
     document_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Удаляет документ из базы данных и все связанные с ним чанки из индекса Elasticsearch.
+
+    Args:
+        document_id (str): Уникальный идентификатор удаляемого документа.
+        db (AsyncSession): Сессия подключения к базе данных.
+        current_user (User): Текущий авторизованный пользователь.
+
+    Returns:
+        dict: Словарь с ID удаленного документа и количеством очищенных чанков.
+
+    Raises:
+        HTTPException: Если документ не найден (404) или у пользователя нет прав на его удаление (403).
+    """
     doc = await get_document_by_id(db, document_id)
     if not doc:
         raise HTTPException(

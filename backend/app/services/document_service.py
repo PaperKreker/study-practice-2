@@ -19,6 +19,18 @@ ALLOWED_EXTENSIONS = {".pdf", ".docx"}
 
 
 async def validate_file(file: UploadFile) -> dict:
+    """Проверяет формат и размер загруженного файла на соответствие системным ограничениям.
+
+    Args:
+        file (UploadFile): Файл, переданный в HTTP-запросе.
+
+    Returns:
+        tuple[dict, bytes]: Кортеж, содержащий сформированные метаданные документа
+        (ID, имя, размер) и само содержимое файла в байтах.
+
+    Raises:
+        HTTPException: Если формат файла не поддерживается (не PDF/DOCX) или размер превышает 20 МБ.
+    """
     filename = file.filename
     _, ext = os.path.splitext(filename.lower())
 
@@ -55,6 +67,20 @@ async def process_document(
     file_bytes: bytes,
     extension: str,
 ) -> list[TextChunk]:
+    """Инициирует процесс парсинга документа и разбиения его на текстовые сегменты (чанки).
+
+    Args:
+        document_id (str): Сгенерированный уникальный идентификатор документа.
+        file_name (str): Исходное имя загружаемого файла.
+        file_bytes (bytes): Содержимое файла в байтах для обработки.
+        extension (str): Расширение файла (например, '.pdf' или '.docx').
+
+    Returns:
+        list[TextChunk]: Список объектов TextChunk, представляющих логические фрагменты текста.
+
+    Raises:
+        HTTPException: При возникновении внутренней ошибки во время извлечения текста.
+    """
 
     logger.info(
         "Начинаю обработку документа '%s' (id=%s, ext=%s, %d байт)",
@@ -86,6 +112,18 @@ async def process_document(
 async def create_document_metadata(
     db: AsyncSession, metadata: dict, chunk_count: int, user_id: uuid.UUID
 ) -> Document:
+    """Сохраняет метаданные документа в базе данных.
+
+    Args:
+        db (AsyncSession): Сессия подключения к базе данных.
+        metadata (dict): Метаданные документа (document_id, file_name, size_bytes),
+            сформированные в validate_file.
+        chunk_count (int): Количество текстовых чанков, полученных при парсинге.
+        user_id (uuid.UUID): Идентификатор пользователя-владельца документа.
+
+    Returns:
+        Document: Сохраненный объект модели документа.
+    """
     db_document = Document(
         id=uuid.UUID(metadata["document_id"]),
         file_name=metadata["file_name"],
@@ -102,8 +140,21 @@ async def get_all_documents(
     db: AsyncSession,
     limit: int = 50,
     offset: int = 0,
-    user_id: uuid.UUID | None = None,  # Новый параметр
+    user_id: uuid.UUID | None = None,
 ) -> tuple[list[Document], int]:
+    """Получает постраничный список документов с опциональной фильтрацией по владельцу.
+
+    Args:
+        db (AsyncSession): Сессия подключения к базе данных.
+        limit (int, optional): Максимальное количество возвращаемых документов. По умолчанию 50.
+        offset (int, optional): Смещение для пагинации. По умолчанию 0.
+        user_id (uuid.UUID | None, optional): Если указан, возвращаются только документы
+            этого пользователя.
+
+    Returns:
+        tuple[list[Document], int]: Список документов текущей страницы и общее
+        количество документов, удовлетворяющих фильтру.
+    """
 
     query = select(Document)
     count_query = select(func.count()).select_from(Document)
@@ -124,6 +175,16 @@ async def get_all_documents(
 
 
 async def get_document_by_id(db: AsyncSession, document_id: str) -> Document | None:
+    """Находит документ по его идентификатору.
+
+    Args:
+        db (AsyncSession): Сессия подключения к базе данных.
+        document_id (str): Идентификатор документа в виде строки (UUID).
+
+    Returns:
+        Document | None: Найденный документ, либо None, если документ не найден
+        или document_id не является корректным UUID.
+    """
     try:
         uid = uuid.UUID(document_id)
     except ValueError:
@@ -134,6 +195,18 @@ async def get_document_by_id(db: AsyncSession, document_id: str) -> Document | N
 
 
 async def delete_document_from_db(db: AsyncSession, document_id: str) -> bool:
+    """Удаляет документ из базы данных по его идентификатору.
+
+    Не затрагивает индекс Elasticsearch — за удаление чанков отвечает
+    отдельный сервис индексации.
+
+    Args:
+        db (AsyncSession): Сессия подключения к базе данных.
+        document_id (str): Идентификатор удаляемого документа.
+
+    Returns:
+        bool: True, если документ был найден и удален, иначе False.
+    """
     doc = await get_document_by_id(db, document_id)
     if not doc:
         return False

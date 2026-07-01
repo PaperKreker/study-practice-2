@@ -9,6 +9,12 @@ from app.models.base import Base
 
 
 class SearchHistory(Base):
+    """ORM-модель записи истории поисковых запросов пользователя.
+
+    Хранит текст запроса, количество найденных результатов, время выполнения,
+    а также опциональные ссылки на пользователя и документ, по которому
+    выполнялся поиск.
+    """
 
     __tablename__ = "search_history"
 
@@ -54,4 +60,5 @@ class SearchHistory(Base):
     )
 
     def __repr__(self) -> str:
+        """Возвращает краткое строковое представление записи истории для отладки."""
         return f"<SearchHistory id={self.id} query={self.query!r}>"

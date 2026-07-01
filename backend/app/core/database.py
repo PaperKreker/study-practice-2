@@ -24,11 +24,23 @@ AsyncSessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """Предоставляет асинхронную сессию базы данных как FastAPI-зависимость.
+
+    Сессия автоматически закрывается по завершении обработки запроса
+    благодаря контекстному менеджеру.
+
+    Yields:
+        AsyncSession: Активная сессия для выполнения запросов к БД.
+    """
     async with AsyncSessionLocal() as session:
         yield session
 
 
 async def init_db() -> None:
+    """Инициализирует схему базы данных, создавая все таблицы из метаданных моделей.
+
+    Вызывается при старте приложения. Не удаляет и не изменяет существующие таблицы.
+    """
     from app.models.base import Base
 
     logger.info("Инициализация схемы БД...")
@@ -38,5 +50,9 @@ async def init_db() -> None:
 
 
 async def close_db() -> None:
+    """Закрывает пул соединений с PostgreSQL.
+
+    Вызывается при остановке приложения для корректного освобождения ресурсов.
+    """
     await engine.dispose()
     logger.debug("Пул соединений с PostgreSQL закрыт.")

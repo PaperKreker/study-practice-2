@@ -12,6 +12,19 @@ async def get_user_history(
     limit: int = 50,
     offset: int = 0,
 ) -> tuple[list[SearchHistory], int]:
+    """Получает постраничную историю поисковых запросов конкретного пользователя.
+
+    Args:
+        db (AsyncSession): Сессия подключения к базе данных.
+        user_id (str): Идентификатор пользователя в виде строки (UUID).
+        limit (int, optional): Максимальное количество возвращаемых записей. По умолчанию 50.
+        offset (int, optional): Смещение для пагинации. По умолчанию 0.
+
+    Returns:
+        tuple[list[SearchHistory], int]: Список записей истории текущей страницы
+        (отсортированных по дате создания, от новых к старым) и общее количество
+        записей пользователя.
+    """
     uid = uuid.UUID(user_id)
 
     count_result = await db.execute(
@@ -32,6 +45,15 @@ async def get_user_history(
 
 
 async def delete_user_history(db: AsyncSession, user_id: str) -> int:
+    """Удаляет всю историю поисковых запросов указанного пользователя.
+
+    Args:
+        db (AsyncSession): Сессия подключения к базе данных.
+        user_id (str): Идентификатор пользователя в виде строки (UUID).
+
+    Returns:
+        int: Количество удаленных записей истории.
+    """
     uid = uuid.UUID(user_id)
     result = await db.execute(delete(SearchHistory).where(SearchHistory.user_id == uid))
     await db.commit()

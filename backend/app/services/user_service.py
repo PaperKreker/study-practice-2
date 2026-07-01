@@ -10,6 +10,18 @@ from app.schemas.user import UserCreate, UserLogin
 
 
 async def create_user(db: AsyncSession, data: UserCreate) -> dict:
+    """Регистрирует нового пользователя и выпускает для него токен доступа.
+
+    Args:
+        db (AsyncSession): Сессия подключения к базе данных.
+        data (UserCreate): Данные регистрации (имя пользователя и пароль).
+
+    Returns:
+        dict: Словарь с ключами access_token, token_type и user (созданный пользователь).
+
+    Raises:
+        HTTPException: Если пользователь с таким именем уже существует (409).
+    """
     result = await db.execute(select(User).where(User.username == data.username))
     if result.scalar_one_or_none():
         raise HTTPException(
@@ -31,6 +43,18 @@ async def create_user(db: AsyncSession, data: UserCreate) -> dict:
 
 
 async def authenticate_user(db: AsyncSession, data: UserLogin) -> dict:
+    """Проверяет логин и пароль пользователя и выпускает токен доступа при успехе.
+
+    Args:
+        db (AsyncSession): Сессия подключения к базе данных.
+        data (UserLogin): Учетные данные пользователя (имя пользователя и пароль).
+
+    Returns:
+        dict: Словарь с ключами access_token, token_type и user (аутентифицированный пользователь).
+
+    Raises:
+        HTTPException: Если логин или пароль неверны (401), либо аккаунт деактивирован (403).
+    """
     result = await db.execute(select(User).where(User.username == data.username))
     user = result.scalar_one_or_none()
 
@@ -51,5 +75,14 @@ async def authenticate_user(db: AsyncSession, data: UserLogin) -> dict:
 
 
 async def get_user_by_id(db: AsyncSession, user_id: str) -> User | None:
+    """Находит пользователя по его идентификатору.
+
+    Args:
+        db (AsyncSession): Сессия подключения к базе данных.
+        user_id (str): Идентификатор пользователя в виде строки (UUID).
+
+    Returns:
+        User | None: Найденный пользователь, либо None, если пользователь не найден.
+    """
     result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
     return result.scalar_one_or_none()

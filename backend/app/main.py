@@ -1,7 +1,7 @@
 import logging
 import redis.asyncio as aioredis
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, status
 from app.api.documents import router as document_router
 from app.api.history import router as history_router
 from app.api.search import router as search_router
@@ -55,11 +55,21 @@ app.include_router(history_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 
 
-@app.get("/")
+@app.get(
+    "/",
+    status_code=status.HTTP_200_OK,
+    summary="Корневой эндпоинт API",
+    description="Проверка доступности API поисковой системы.",
+)
 async def root():
     return {"message": "API поисковой системы успешно запущено"}
 
 
-@app.get("/health")
+@app.get(
+    "/health",
+    status_code=status.HTTP_200_OK,
+    summary="Проверка состояния системы",
+    description="Возвращает статус 'ok' для мониторинга работоспособности сервиса.",
+)
 async def health_check():
     return {"status": "ok"}

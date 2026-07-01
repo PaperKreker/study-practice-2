@@ -3,6 +3,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """Конфигурация приложения, загружаемая из переменных окружения и файла .env.
+
+    Содержит параметры подключения к Elasticsearch, Redis, PostgreSQL,
+    а также настройки безопасности для выпуска JWT-токенов.
+    """
+
     elasticsearch_url: str = "http://127.0.0.1:9200/"
     elasticsearch_index: str = "documents"
 
@@ -27,6 +33,11 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def database_url(self) -> str:
+        """Формирует асинхронную строку подключения к PostgreSQL из отдельных параметров.
+
+        Returns:
+            str: Строка подключения в формате SQLAlchemy (postgresql+psycopg).
+        """
         return (
             f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"

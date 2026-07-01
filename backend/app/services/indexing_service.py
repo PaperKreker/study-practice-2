@@ -10,6 +10,16 @@ logger = logging.getLogger(__name__)
 async def index_document_chunks(
     document_id: str, file_name: str, chunks: list[TextChunk]
 ) -> int:
+    """Сохраняет (индексирует) текстовые чанки документа в поисковую базу Elasticsearch.
+
+    Args:
+        document_id (str): Идентификатор документа.
+        file_name (str): Название документа.
+        chunks (list[TextChunk]): Список объектов-чанков для добавления в индекс.
+
+    Returns:
+        int: Количество успешно проиндексированных фрагментов.
+    """
     es = get_es_client()
     index_name = settings.elasticsearch_index
 
@@ -39,6 +49,14 @@ async def index_document_chunks(
 
 
 async def delete_document_chunks(document_id: str) -> int:
+    """Удаляет из Elasticsearch все чанки, принадлежащие указанному документу.
+
+    Args:
+        document_id (str): Идентификатор документа, чьи чанки требуется удалить.
+
+    Returns:
+        int: Количество удаленных чанков.
+    """
     es = get_es_client()
     index_name = settings.elasticsearch_index
 

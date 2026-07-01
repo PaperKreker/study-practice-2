@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -12,8 +12,10 @@ router = APIRouter(prefix="/search/history", tags=["search history"])
 
 @router.get(
     "",
+    status_code=status.HTTP_200_OK,
     response_model=HistoryListResponse,
     summary="История поисковых запросов пользователя",
+    description="Возвращает историю поисковых запросов текущего пользователя с пагинацией.",
 )
 async def get_history(
     limit: int = Query(50, ge=1, le=200),
@@ -21,6 +23,17 @@ async def get_history(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Возвращает историю поисковых запросов текущего пользователя с пагинацией.
+
+    Args:
+        limit (int): Максимальное количество возвращаемых записей.
+        offset (int): Смещение для пагинации (количество пропускаемых записей).
+        db (AsyncSession): Сессия подключения к базе данных.
+        current_user (User): Текущий авторизованный пользователь.
+
+    Returns:
+        HistoryListResponse: Объект с общим количеством записей и списком элементов истории.
+    """
     items, total = await get_user_history(
         db, str(current_user.id), limit=limit, offset=offset
     )
@@ -34,11 +47,21 @@ async def get_history(
     "",
     response_model=DeleteHistoryResponse,
     summary="Очистить историю запросов пользователя",
+    description="Полностью удаляет историю поисковых запросов текущего пользователя.",
 )
 async def delete_history(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Полностью удаляет историю поисковых запросов текущего пользователя.
+
+    Args:
+        db (AsyncSession): Сессия подключения к базе данных.
+        current_user (User): Текущий авторизованный пользователь.
+
+    Returns:
+        DeleteHistoryResponse: Объект с количеством удаленных записей и сообщением.
+    """
     deleted = await delete_user_history(db, str(current_user.id))
     return DeleteHistoryResponse(
         deleted=deleted,

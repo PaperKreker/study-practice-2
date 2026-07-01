@@ -17,6 +17,8 @@ router = APIRouter(tags=["search"])
     status_code=status.HTTP_200_OK,
     response_model=SearchResponse,
     summary="Поиск по документам",
+    description="Выполняет полнотекстовый поиск по загруженным в систему документам.",
+    responses={500: {"description": "Произошла ошибка при выполнении поиска."}},
 )
 @cache(expire=300, key_builder=search_cache_key_builder)
 async def search(
@@ -28,6 +30,20 @@ async def search(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Выполняет полнотекстовый поиск по загруженным в систему документам.
+
+    Args:
+        q (str): Поисковый запрос пользователя.
+        page (int): Номер страницы для отображения результатов.
+        size (int): Количество результатов на одной странице.
+        document_id (str | None): Опциональный UUID для ограничения поиска одним документом.
+        my_docs (bool): Флаг для поиска исключительно по документам текущего пользователя.
+        db (AsyncSession): Сессия подключения к базе данных.
+        current_user (User): Текущий авторизованный пользователь.
+
+    Returns:
+        dict: Данные ответа, содержащие общее число совпадений и массив найденных фрагментов.
+    """
     try:
         response_data = await search_documents(
             db=db,
