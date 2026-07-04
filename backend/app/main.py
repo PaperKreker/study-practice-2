@@ -1,17 +1,22 @@
 import logging
-import redis.asyncio as aioredis
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, status
+from fastapi import FastAPI, status, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+from prometheus_client import make_asgi_app, Counter, Histogram
+import redis.asyncio as aioredis
+from starlette.middleware.base import BaseHTTPMiddleware
+import time
+import re
+
 from app.api.documents import router as document_router
 from app.api.history import router as history_router
 from app.api.search import router as search_router
 from app.api.users import router as users_router
 from app.core.config import settings
-
 from app.core.elastic import close_elasticsearch, init_elasticsearch
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.redis import RedisBackend
+
 from app.core.database import close_db, init_db
 
 logging.basicConfig(
@@ -41,6 +46,46 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Счётчик запросов (method, endpoint, status)
+REQUESTS = Counter(
+    'http_requests_total',
+    'Total HTTP requests',
+    ['method', 'endpoint', 'status']
+)
+
+# Гистограмма времени ответа (method, endpoint)
+DURATION = Histogram(
+    'http_request_duration_seconds',
+    'HTTP request duration in seconds',
+    ['method', 'endpoint'],
+    buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10)  # настраиваемые бакеты
+)
+
+
+class PrometheusMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Определяем эндпоинт: убираем динамические части (ID, параметры)
+        # Например, /api/v1/documents/123 -> /api/v1/documents/{id}
+        path = request.url.path
+        # Заменяем цифровые ID на {id}
+        endpoint = re.sub(r'/\d+', '/{id}', path)
+
+        start_time = time.time()
+        try:
+            response = await call_next(request)
+            status = response.status_code
+            return response
+        except Exception:
+            status = 500
+            raise
+        finally:
+            duration = time.time() - start_time
+            # Обновляем счётчик и гистограмму
+            REQUESTS.labels(method=request.method, endpoint=endpoint, status=status).inc()
+            DURATION.labels(method=request.method, endpoint=endpoint).observe(duration)
+
+
+app.add_middleware(PrometheusMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -48,6 +93,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+metrics_app = make_asgi_app()
+app.mount("/metrics", metrics_app)
 
 app.include_router(document_router, prefix="/api/v1")
 app.include_router(search_router, prefix="/api/v1")

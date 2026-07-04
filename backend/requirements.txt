@@ -16,3 +16,4 @@ python-docx>=1.2.0
 bcrypt>=5.0.0
 PyJWT>=2.13.0
 fastapi-cache2-fork>=2.3.0
+prometheus-client
