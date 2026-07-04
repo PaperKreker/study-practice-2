@@ -14,6 +14,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
 
   elasticsearch:
     image: elasticsearch:9.4.3
@@ -64,6 +65,18 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  frontend:
+    build: ./frontend
+    ports:
+    - "3000:3000"
+    volumes:
+    - ./frontend:/app
+    - /frontend/node_modules
+    depends_on:
+      - backend
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
 
 volumes:
   postgres_data:
