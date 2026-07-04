@@ -67,8 +67,10 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
         # Определяем эндпоинт: убираем динамические части (ID, параметры)
         # Например, /api/v1/documents/123 -> /api/v1/documents/{id}
         path = request.url.path
-        # Заменяем цифровые ID на {id}
-        endpoint = re.sub(r'/\d+', '/{id}', path)
+        # Сначала заменяем UUID (формат 8-4-4-4-12 шестнадцатеричных символов)
+        endpoint = re.sub(r'/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', '/{id}', path)
+        # Затем заменяем цифровые ID (если они есть)
+        endpoint = re.sub(r'/\d+', '/{id}', endpoint)
 
         start_time = time.time()
         try:
