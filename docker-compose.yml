@@ -76,15 +76,19 @@ services:
 
   frontend:
     build: ./frontend
+    container_name: frontend
     ports:
-    - "3000:3000"
+    - "3000:80"
     volumes:
     - ./frontend:/app
     - /frontend/node_modules
     depends_on:
       - backend
-    environment:
-      - REACT_APP_API_URL=http://localhost:8000
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
       - app-network
 
