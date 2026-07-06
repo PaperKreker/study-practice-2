@@ -1,0 +1,11 @@
+query,expected_file,top_3,hit
+coherent light interference,qa_optics.docx,qa_optics.docx,True
+entropy heat capacity,qa_thermodynamics.docx,qa_thermodynamics.docx,True
+quantum wave function,qa_quantum_mechanics.docx,qa_quantum_mechanics.docx | qa_acoustics.docx,True
+electric field capacitance,qa_electromagnetism.docx,qa_electromagnetism.docx,True
+Newtonian orbital motion,qa_classical_mechanics.docx,qa_classical_mechanics.docx | qa_molecular_physics.docx,True
+molecular collision pressure,qa_molecular_physics.docx,qa_molecular_physics.docx,True
+semiconductor band gap,qa_solid_state.docx,qa_solid_state.docx | qa_thermodynamics.docx | qa_optics.docx,True
+nuclear radioactive decay,qa_nuclear_physics.docx,qa_nuclear_physics.docx,True
+sound resonance frequency,qa_acoustics.docx,qa_acoustics.docx,True
+laser stimulated emission,qa_laser_physics.docx,qa_laser_physics.docx | qa_nuclear_physics.docx,True
