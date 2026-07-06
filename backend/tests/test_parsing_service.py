@@ -48,6 +48,16 @@ def test_parse_pdf_extracts_text_from_valid_fixture() -> None:
     assert "knowledge base search" in chunks[0].text
 
 
+def test_parse_pdf_extracts_text_with_non_standard_font() -> None:
+    chunks = parse_pdf(
+        (FIXTURES_DIR / "non_standard_font.pdf").read_bytes(),
+        "non-standard-font",
+    )
+
+    assert len(chunks) == 1
+    assert chunks[0].text == "Non-standard font fixture"
+
+
 def test_empty_documents_return_no_chunks() -> None:
     assert parse_docx((FIXTURES_DIR / "empty.docx").read_bytes(), "empty-docx") == []
     assert parse_pdf((FIXTURES_DIR / "empty.pdf").read_bytes(), "empty-pdf") == []

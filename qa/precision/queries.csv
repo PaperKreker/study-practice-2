@@ -1,0 +1,11 @@
+query,expected_file,content
+coherent light interference,qa_optics.docx,Optics lecture about coherent light interference diffraction and polarization.
+entropy heat capacity,qa_thermodynamics.docx,Thermodynamics lecture about entropy temperature heat capacity and the ideal gas law.
+quantum wave function,qa_quantum_mechanics.docx,Quantum mechanics lecture about the wave function uncertainty and energy levels.
+electric field capacitance,qa_electromagnetism.docx,Electromagnetism lecture about electric field voltage capacitance and magnetic induction.
+Newtonian orbital motion,qa_classical_mechanics.docx,Classical mechanics lecture about Newtonian orbital motion force momentum and acceleration.
+molecular collision pressure,qa_molecular_physics.docx,Molecular physics lecture about molecular collision pressure diffusion and Brownian motion.
+semiconductor band gap,qa_solid_state.docx,Solid state physics lecture about crystal lattices semiconductor band gap and conductivity.
+nuclear radioactive decay,qa_nuclear_physics.docx,Nuclear physics lecture about radioactive decay isotopes binding energy and fission.
+sound resonance frequency,qa_acoustics.docx,Acoustics lecture about sound resonance frequency standing waves and harmonics.
+laser stimulated emission,qa_laser_physics.docx,Laser physics lecture about stimulated emission population inversion photons and optical cavities.
